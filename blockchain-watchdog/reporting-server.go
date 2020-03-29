@@ -851,6 +851,7 @@ type statusReport struct {
 	Versions     []string      `json:"commit-version"`
 	AvailSeats   int           `json:"avail-seats"`
 	ElectedSeats int           `json:"used-seats"`
+	Validators   int           `json:"validators"`
 }
 
 type shardStatus struct {
@@ -890,18 +891,25 @@ func (m *monitor) statusSnapshot() statusReport {
 		versions = append(versions, k)
 	}
 
+	addresses := []string{}
 	usedSeats := 0
 	for _, info := range m.SuperCommittee.CurrentCommittee.Deciders {
-		usedSeats += linq.From(info.Committee).CountWith(func(v interface{}) bool {
-			return !v.(CommitteeMember).IsHarmonyNode
+		linq.From(info.Committee).ForEach(func (v interface{}){
+			if !v.(CommitteeMember).IsHarmonyNode {
+				usedSeats += 1
+				addresses = append(addresses, v.(CommitteeMember).Address)
+			}
 		})
 	}
 
+	var uniqValidators []string
+	linq.From(addresses).Distinct().ToSlice(&uniqValidators)
 	return statusReport{
 		status,
 		versions,
 		m.SuperCommittee.CurrentCommittee.ExternalCount,
 		usedSeats,
+		len(uniqValidators),
 	}
 }
 
