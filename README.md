@@ -1,6 +1,8 @@
 # watchdog
 Harmony Watchdog
 
+Originally from: [harmony-one/harmony-ops](https://github.com/harmony-one/harmony-ops/pull/524)
+
 ## Example YAML file
 ```yaml
 # Place all needed authorization keys here
