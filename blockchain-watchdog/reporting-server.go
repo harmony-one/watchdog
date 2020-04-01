@@ -362,7 +362,6 @@ type monitor struct {
 	MetadataSnapshot    MetadataContainer
 	BlockHeaderSnapshot BlockHeaderContainer
 	SuperCommittee      SuperCommitteeReply
-	LastCrossLinks      LastCrossLinkReply
 	SummarySnapshot     map[string]map[string]interface{}
 	NoReplySnapshot     []noReply
 	consensusProgress   map[string]bool
@@ -779,7 +778,6 @@ func (m *monitor) update(
 			)
 			go m.crossLinkMonitor(
 				uint64(params.InspectSchedule.CrossLink),
-				uint64(params.ShardHealthReporting.CrossLink.Warning),
 				params.Performance.WorkerPoolSize,
 				params.Auth.PagerDuty.EventServiceKey,
 				params.Network.TargetChain,
@@ -850,11 +848,6 @@ func (m *monitor) networkSnapshot() networkReport {
 	totalNoReplyMachines = append(
 		append(totalNoReplyMachines, m.MetadataSnapshot.Down...), m.BlockHeaderSnapshot.Down...,
 	)
-	for _, v := range m.LastCrossLinks.CrossLinks {
-		if sum[headerSumry][strconv.Itoa(v.ShardID)] != nil {
-			sum[headerSumry][strconv.Itoa(v.ShardID)].(any)["last-crosslink"] = v.BlockNumber
-		}
-	}
 	m.inUse.Unlock()
 	return networkReport{buildVersion, m.chain, cnsProgressCpy, sum, totalNoReplyMachines}
 }
@@ -915,12 +908,14 @@ func (m *monitor) statusSnapshot() statusReport {
 		})
 	}
 
+	var uniqValidators []string
+	linq.From(addresses).Distinct().ToSlice(&uniqValidators)
 	return statusReport{
 		status,
 		versions,
 		m.SuperCommittee.CurrentCommittee.ExternalCount,
 		usedSeats,
-		linq.From(addresses).Distinct().Count(),
+		len(uniqValidators),
 	}
 }
 

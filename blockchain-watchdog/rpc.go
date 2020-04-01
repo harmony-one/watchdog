@@ -99,7 +99,7 @@ type CommitteeMember struct {
 }
 
 type LastCrossLinkReply struct {
-	CrossLinks []CrossLink `json:"result"`
+	CrossLinks []CrossLink
 }
 
 type CrossLink struct {
