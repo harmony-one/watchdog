@@ -198,10 +198,10 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 				return r[0]
 			},
 			"currentCommitteeCount": func(shardID string) string {
-				return strconv.Itoa(m.SuperCommittee.CurrentCommittee.Deciders[shardID].Externals)
+				return strconv.Itoa(m.SuperCommittee.CurrentCommittee.Deciders["shard-"+shardID].Externals)
 			},
 			"previousCommitteeCount": func(shardID string) string {
-				return strconv.Itoa(m.SuperCommittee.PreviousCommittee.Deciders[shardID].Externals)
+				return strconv.Itoa(m.SuperCommittee.PreviousCommittee.Deciders["shard-"+shardID].Externals)
 			},
 			"getShardID": func(s string) string {
 				return s[len(s)-1:]
