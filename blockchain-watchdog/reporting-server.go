@@ -124,7 +124,7 @@ func summaryMaps(metas []NodeMetadata, headers []BlockHeader) summary {
 	}
 
 	linq.From(metas).GroupBy(
-		func(node interface{}) interface{} { return parseVersionS(node.(NodeMetadata).Payload.Version) }, identity,
+		func(node interface{}) interface{} { return node.(NodeMetadata).Payload.Version }, identity,
 	).ForEach(func(value interface{}) {
 		vrs := value.(linq.Group).Key.(string)
 		sum[metaSumry][vrs] = map[string]interface{}{"records": value.(linq.Group).Group}
@@ -194,7 +194,7 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 		Funcs(template.FuncMap{
 			"getCommitID": func(version string) string {
 				r := strings.Split(version, `-g`)
-				r = strings.Split(r[len(r)-1], "-")
+				r = strings.Split(r[len(r)-1], " ")
 				return r[0]
 			},
 			"currentCommitteeCount": func(shardID string) string {
