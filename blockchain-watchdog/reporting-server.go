@@ -564,11 +564,7 @@ func (m *monitor) cxMonitor(interval uint64, poolSize int, pdServiceKey, chain s
 				json.Unmarshal(d.rpcResult, &oneReport)
 				if oneReport.Result.IsLeader {
 					shard := int(oneReport.Result.ShardID)
-					if _, exists := leaders[shard]; exists {
-						leaders[shard] = append(leaders[shard], d.address)
-					} else {
-						leaders[shard] = []string{d.address}
-					}
+					leaders[shard] = append(leaders[shard], d.address)
 				}
 			}
 		}
@@ -602,14 +598,10 @@ func (m *monitor) cxMonitor(interval uint64, poolSize int, pdServiceKey, chain s
 						}
 					}
 				}
-				if _, exists := cxPoolSize[shard]; exists {
-					cxPoolSize[shard] = append(cxPoolSize[shard], report.Result)
-				} else {
-					cxPoolSize[shard] = []uint64{report.Result}
-				}
+				cxPoolSize[shard] = append(cxPoolSize[shard], report.Result)
 				if report.Result > uint64(1000) {
 					message := fmt.Sprintf(crossShardTransactionMessage, shard, report.Result)
-					incidentKey := fmt.Sprintf("Shard %s cx transaction pool size > 1000! - %s", shard, chain)
+					incidentKey := fmt.Sprintf("Shard %d cx transaction pool size > 1000! - %s", shard, chain)
 					err := notify(pdServiceKey, incidentKey, chain, message)
 					if err != nil {
 						errlog.Print(err)

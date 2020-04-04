@@ -18,8 +18,8 @@ type NodeMetadataReply struct {
 	ShardID        uint32   `json:"shard-id"`
 	NodeRole       string   `json:"role"`
 	BlocksPerEpoch int      `json:"blocks-per-epoch"`
-	DNSZone        string   `json:"dns-zone,omit-empty"`
-	ArchivalNode   bool     `json:"is-archival,omit-empty"`
+	DNSZone        string   `json:"dns-zone,omitempty"`
+	ArchivalNode   bool     `json:"is-archival,omitempty"`
 	ChainConfig    struct {
 		ChainID         int `json:"chain-id"`
 		CrossLinkEpoch  int `json:"cross-link-epoch"`
@@ -52,20 +52,6 @@ type BlockHeaderReply struct {
 type BlockHeader struct {
 	Payload BlockHeaderReply
 	IP      string
-}
-
-// TODO: Come back to this
-type PendingCXReply struct {
-	PendingCX []CXReceiptProof `json:"-"`
-}
-
-// Don't care about contents of each Receipt
-type CXReceiptProof struct {
-	Receipts     interface{} `json:"receipts"`
-	MerkleProof  interface{} `json:"merkleProof"`
-	Header       interface{} `json:"header"`
-	CommitSig    string      `json:"commitSig"`
-	CommitBitmap string      `json:"commitBitmap"`
 }
 
 type SuperCommitteeReply struct {
