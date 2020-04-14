@@ -173,7 +173,7 @@ hr:after {
         {{ with (index .Summary "node-metadata") }}
         {{range $key, $value := .}}
           <div class="flex-col center stat-box">
-            <a href="#version-{{$key}}">Version-{{$key}}</a>
+            <a href="#version-{{$key}}">{{$key}}</a>
             <p>
               Node Count:{{ len (index $value "records") }}
               {{ with getCommitID $key }}

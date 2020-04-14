@@ -28,9 +28,7 @@ const (
 )
 
 var (
-	sep       = []byte("\n")
-	recordSep = []byte(spaceSep)
-	rootCmd   = &cobra.Command{
+	rootCmd = &cobra.Command{
 		Use:          "harmony-watchdogd",
 		SilenceUsage: true,
 		Long:         "Monitor a Harmony blockchain",
@@ -144,7 +142,7 @@ func (service *Service) compareIPInShardFileWithNodes() error {
 
 func (service *Service) monitorNetwork() error {
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	// Set up listener for defined host and port
 	listener, err := net.Listen(
 		"tcp",
@@ -159,19 +157,14 @@ func (service *Service) monitorNetwork() error {
 	go acceptConnection(listener, listen)
 	// loop work cycle with accept connections or interrupt
 	// by system signal
-	for {
-		select {
-		case killSignal := <-interrupt:
-			stdlog.Println("Got signal:", killSignal)
-			stdlog.Println("Stoping listening on ", listener.Addr())
-			listener.Close()
-			if killSignal == os.Interrupt {
-				return errSysIntrpt
-			}
-			return errDaemonKilled
-		}
+	killSignal := <-interrupt
+	stdlog.Println("Got signal:", killSignal)
+	stdlog.Println("Stopping listening on ", listener.Addr())
+	listener.Close()
+	if killSignal == os.Interrupt {
+		return errSysIntrpt
 	}
-	return nil
+	return errDaemonKilled
 }
 
 // Accept a client connection and collect it in a channel
@@ -282,7 +275,7 @@ func newInstructions(yamlPath string) (*instruction, error) {
 		}
 	}
 	if len(nodeList) == 0 {
-		return nil, errors.New("Empty node list.")
+		return nil, errors.New("empty node list")
 	}
 	if len(dups) > 0 {
 		return nil, errors.New("Duplicate IPs detected.\n" + strings.Join(dups, "\n"))
@@ -340,16 +333,6 @@ func versionS() string {
 		"Harmony (C) 2020. %v, version %v-%v (%v %v)",
 		path.Base(os.Args[0]), version, commit, builtBy, builtAt,
 	)
-}
-
-func parseVersionS(v string) string {
-	const versionSpot = 5
-	const versionSep = "-"
-	chopped := strings.Split(v, spaceSep)
-	if len(chopped) < versionSpot {
-		return badVersionString
-	}
-	return chopped[versionSpot]
 }
 
 func init() {

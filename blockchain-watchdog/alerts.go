@@ -25,7 +25,7 @@ Time since last new block: %d seconds (%f minutes)
 See: http://watchdog.hmny.io/report-%s
 `
 	crossShardTransactionMessage = `
-Cx Transaction Pool too large on shard %s!
+Cx Transaction Pool too large on shard %d!
 
 Count: %d
 `
@@ -34,14 +34,14 @@ Haven't processed a cross link for shard %d in a while!
 
 Cross Link Hash: %s
 
-Shard %d Block: %s
+Shard %d Block: %d
 
-Shard %d Epoch: %s
+Shard %d Epoch: %d
 
 Signature: %s
 
 Signature Bitmap: %s
 
-Time since last processed cross link: %d seconds (%f minutes)
+Time since last processed cross link: %f seconds (%f minutes)
 `
 )

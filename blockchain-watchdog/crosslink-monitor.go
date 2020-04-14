@@ -37,10 +37,6 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 		Result NodeMetadataReply `json:"result"`
 	}
 
-	type t struct {
-		Result []CrossLink `json:"result"`
-	}
-
 	type processedCrossLink struct {
 		BlockNum  int
 		CrossLink CrossLink
@@ -94,7 +90,7 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 					if entry, exists := lastProcessed[result.ShardID]; exists {
 						elapsedTime := now.Sub(entry.TS)
 						if result.BlockNumber <= entry.BlockNum {
-						  if uint64(elapsedTime.Seconds()) >= warning {
+							if uint64(elapsedTime.Seconds()) >= warning {
 								message := fmt.Sprintf(crossLinkMessage, result.ShardID,
 									result.Hash, result.ShardID, result.BlockNumber, result.ShardID,
 									result.EpochNumber, result.Signature, result.SignatureBitmap,

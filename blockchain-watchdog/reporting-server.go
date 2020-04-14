@@ -124,7 +124,7 @@ func summaryMaps(metas []NodeMetadata, headers []BlockHeader) summary {
 	}
 
 	linq.From(metas).GroupBy(
-		func(node interface{}) interface{} { return parseVersionS(node.(NodeMetadata).Payload.Version) }, identity,
+		func(node interface{}) interface{} { return node.(NodeMetadata).Payload.Version }, identity,
 	).ForEach(func(value interface{}) {
 		vrs := value.(linq.Group).Key.(string)
 		sum[metaSumry][vrs] = map[string]interface{}{"records": value.(linq.Group).Group}
@@ -194,14 +194,14 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 		Funcs(template.FuncMap{
 			"getCommitID": func(version string) string {
 				r := strings.Split(version, `-g`)
-				r = strings.Split(r[len(r)-1], "-")
+				r = strings.Split(r[len(r)-1], " ")
 				return r[0]
 			},
 			"currentCommitteeCount": func(shardID string) string {
-				return strconv.Itoa(m.SuperCommittee.CurrentCommittee.Deciders[shardID].Externals)
+				return strconv.Itoa(m.SuperCommittee.CurrentCommittee.Deciders["shard-"+shardID].Externals)
 			},
 			"previousCommitteeCount": func(shardID string) string {
-				return strconv.Itoa(m.SuperCommittee.PreviousCommittee.Deciders[shardID].Externals)
+				return strconv.Itoa(m.SuperCommittee.PreviousCommittee.Deciders["shard-"+shardID].Externals)
 			},
 			"getShardID": func(s string) string {
 				return s[len(s)-1:]
@@ -564,11 +564,7 @@ func (m *monitor) cxMonitor(interval uint64, poolSize int, pdServiceKey, chain s
 				json.Unmarshal(d.rpcResult, &oneReport)
 				if oneReport.Result.IsLeader {
 					shard := int(oneReport.Result.ShardID)
-					if _, exists := leaders[shard]; exists {
-						leaders[shard] = append(leaders[shard], d.address)
-					} else {
-						leaders[shard] = []string{d.address}
-					}
+					leaders[shard] = append(leaders[shard], d.address)
 				}
 			}
 		}
@@ -602,14 +598,10 @@ func (m *monitor) cxMonitor(interval uint64, poolSize int, pdServiceKey, chain s
 						}
 					}
 				}
-				if _, exists := cxPoolSize[shard]; exists {
-					cxPoolSize[shard] = append(cxPoolSize[shard], report.Result)
-				} else {
-					cxPoolSize[shard] = []uint64{report.Result}
-				}
+				cxPoolSize[shard] = append(cxPoolSize[shard], report.Result)
 				if report.Result > uint64(1000) {
 					message := fmt.Sprintf(crossShardTransactionMessage, shard, report.Result)
-					incidentKey := fmt.Sprintf("Shard %s cx transaction pool size > 1000! - %s", shard, chain)
+					incidentKey := fmt.Sprintf("Shard %d cx transaction pool size > 1000! - %s", shard, chain)
 					err := notify(pdServiceKey, incidentKey, chain, message)
 					if err != nil {
 						errlog.Print(err)
