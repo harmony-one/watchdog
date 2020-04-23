@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -133,38 +132,44 @@ func checkShardHeight(b BlockHeaderContainer, tolerance uint64,
 	pdServiceKey, chain string,
 ) {
 	stdlog.Print("[checkShardHeight] Running shard height check...")
-	addressHeightMap := make(map[uint64][]BlockHeader)
+	shardHeightMap := make(map[uint32](map[uint64][]BlockHeader))
 	for _, v := range b.Nodes {
-		temp := addressHeightMap[v.Payload.BlockNumber]
-		temp = append(temp, v)
+		shard := v.Payload.ShardID
+		block :=  v.Payload.BlockNumber
+		if shardHeightMap[shard] == nil {
+			shardHeightMap[shard] = make(map[uint64][]BlockHeader)
+		}
+		if shardHeightMap[shard][block] == nil {
+			shardHeightMap[shard][block] = []BlockHeader{}
+		}
+		shardHeightMap[shard][block] = append(shardHeightMap[shard][block], v)
 	}
-	uniqueHeights := []int{}
-	for i, _ := range addressHeightMap {
-		uniqueHeights = append(uniqueHeights, int(i))
-	}
+	for i, s := range shardHeightMap {
+		uniqueHeights := []int{}
+		for h, _ := range s {
+			uniqueHeights = append(uniqueHeights, int(h))
+		}
 
-	sort.SliceStable(uniqueHeights, func (i, j int) bool {
-		return j > i
-	})
-
-	if len(uniqueHeights) > 1 {
-		maxHeight := uint64(uniqueHeights[0])
+		maxHeight := uint64(0)
+		for _, h := range uniqueHeights {
+			if uint64(h) > maxHeight {
+				maxHeight = uint64(h)
+			}
+		}
 		for _, h := range uniqueHeights {
 			if maxHeight - uint64(h) > tolerance {
-				for _, v := range addressHeightMap[uint64(h)] {
+				for _, v := range shardHeightMap[i][uint64(h)] {
 					go checkSync(v.IP, pdServiceKey, chain,
 						v.Payload.BlockNumber, maxHeight)
 				}
 			}
 		}
+		stdlog.Print(
+			fmt.Sprintf("[checkShardHeight] Shard %d, Max height: %d," +
+				"Number of unique heights: %d, Unique heights: %v",
+				 i, maxHeight, len(uniqueHeights), uniqueHeights),
+		)
 	}
-	stdlog.Print(
-		fmt.Sprintf("[checkShardHeight] Number of unique heights: %d",
-			len(uniqueHeights)),
-	)
-	stdlog.Print(
-		fmt.Sprintf("[checkShardHeight] Unique Heights: %v", uniqueHeights),
-	)
 }
 
 func checkSync(IP, pdServiceKey, chain string,
@@ -198,7 +203,7 @@ func checkSync(IP, pdServiceKey, chain string,
 			if err != nil {
 				errlog.Print(err)
 			} else {
-				stdlog.Print("Sent PagerDuty alert! %s", incidentKey)
+				stdlog.Print(fmt.Sprintf("[checkSync] Sent PagerDuty alert! %s", incidentKey))
 			}
 			stdlog.Print(fmt.Sprintf("[checkSync] IP %s is not syncing...", IP))
 		} else {
