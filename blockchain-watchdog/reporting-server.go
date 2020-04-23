@@ -412,107 +412,6 @@ func (m *monitor) worker(
 	}
 }
 
-func (m *monitor) consensusMonitor(
-	interval uint64, poolSize int, pdServiceKey, chain string, shardMap map[string]int,
-) {
-	jobs := make(chan work, len(shardMap))
-	replyChannels := make(map[string](chan reply))
-	syncGroups := make(map[string]*sync.WaitGroup)
-
-	replyChannels[BlockHeaderRPC] = make(chan reply, len(shardMap))
-	var bhGroup sync.WaitGroup
-	syncGroups[BlockHeaderRPC] = &bhGroup
-
-	for i := 0; i < poolSize; i++ {
-		go m.worker(jobs, replyChannels, syncGroups)
-	}
-
-	requestFields := getRPCRequest(BlockHeaderRPC)
-
-	type s struct {
-		Result BlockHeaderReply `json:"result"`
-	}
-
-	type lastSuccessfulBlock struct {
-		Height uint64
-		TS     time.Time
-	}
-
-	lastShardData := make(map[string]lastSuccessfulBlock)
-	consensusStatus := make(map[string]bool)
-
-	for now := range time.Tick(time.Duration(interval) * time.Second) {
-		queryID := 0
-		for n := range shardMap {
-			requestFields["id"] = strconv.Itoa(queryID)
-			requestBody, _ := json.Marshal(requestFields)
-			jobs <- work{n, BlockHeaderRPC, requestBody}
-			queryID++
-			syncGroups[BlockHeaderRPC].Add(1)
-		}
-		syncGroups[BlockHeaderRPC].Wait()
-		close(replyChannels[BlockHeaderRPC])
-
-		monitorData := BlockHeaderContainer{}
-		for d := range replyChannels[BlockHeaderRPC] {
-			if d.oops != nil {
-				monitorData.Down = append(m.WorkingBlockHeader.Down,
-					noReply{d.address, d.oops.Error(), string(d.rpcPayload), shardMap[d.address]})
-			} else {
-				oneReport := s{}
-				json.Unmarshal(d.rpcResult, &oneReport)
-				monitorData.Nodes = append(monitorData.Nodes, BlockHeader{
-					oneReport.Result,
-					d.address,
-				})
-			}
-		}
-
-		blockHeaderData := any{}
-		blockHeaderSummary(monitorData.Nodes, true, blockHeaderData)
-
-		currentUTCTime := now.UTC()
-
-		for shard, summary := range blockHeaderData {
-			currentBlockHeight := summary.(any)[blockMax].(uint64)
-			currentBlockHeader := summary.(any)["latest-block"].(BlockHeader)
-			if lastBlock, exists := lastShardData[shard]; exists {
-				if currentBlockHeight <= lastBlock.Height {
-					timeSinceLastSuccess := currentUTCTime.Sub(lastBlock.TS)
-					if uint64(timeSinceLastSuccess.Seconds()) > interval {
-						message := fmt.Sprintf(consensusMessage,
-							shard, currentBlockHeight, lastBlock.TS.Format(timeFormat),
-							currentBlockHeader.Payload.BlockHash, currentBlockHeader.Payload.Leader,
-							currentBlockHeader.Payload.ViewID, currentBlockHeader.Payload.Epoch,
-							currentBlockHeader.Payload.Timestamp, currentBlockHeader.Payload.LastCommitSig,
-							currentBlockHeader.Payload.LastCommitBitmap,
-							int64(timeSinceLastSuccess.Seconds()), timeSinceLastSuccess.Minutes(), chain)
-						incidentKey := fmt.Sprintf("Shard %s consensus stuck! - %s", shard, chain)
-						err := notify(pdServiceKey, incidentKey, chain, message)
-						if err != nil {
-							errlog.Print(err)
-						} else {
-							stdlog.Print("Sent PagerDuty alert! %s", incidentKey)
-						}
-						consensusStatus[shard] = false
-						continue
-					}
-				}
-			}
-			lastShardData[shard] = lastSuccessfulBlock{currentBlockHeight, time.Unix(currentBlockHeader.Payload.UnixTime, 0).UTC()}
-			consensusStatus[shard] = true
-		}
-		stdlog.Printf("Total no reply machines: %d", len(monitorData.Down))
-		stdlog.Print(lastShardData)
-		stdlog.Print(consensusStatus)
-
-		m.inUse.Lock()
-		m.consensusProgress = consensusStatus
-		m.inUse.Unlock()
-		replyChannels[BlockHeaderRPC] = make(chan reply, len(shardMap))
-	}
-}
-
 func (m *monitor) cxMonitor(interval uint64, poolSize int, pdServiceKey, chain string, shardMap map[string]int) {
 	cxRequestFields := getRPCRequest(PendingCXRPC)
 	nodeRequestFields := getRPCRequest(NodeMetadataRPC)
@@ -763,7 +662,9 @@ func (m *monitor) update(
 			)
 			go m.stakingCommitteeUpdate(getBeaconChainNode(shardMap))
 			go m.consensusMonitor(
+				uint64(params.ShardHealthReporting.Consensus.Interval),
 				uint64(params.ShardHealthReporting.Consensus.Warning),
+				uint64(params.ShardHealthReporting.ShardHeight.Warning),
 				params.Performance.WorkerPoolSize,
 				params.Auth.PagerDuty.EventServiceKey,
 				params.Network.TargetChain,

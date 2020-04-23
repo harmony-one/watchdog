@@ -204,11 +204,15 @@ type watchParams struct {
 	} `yaml:"http-reporter"`
 	ShardHealthReporting struct {
 		Consensus struct {
-			Warning int `yaml:"warning"`
+			Interval int `yaml:"interval"`
+			Warning  int `yaml:"warning"`
 		} `yaml:"consensus"`
 		CrossLink struct {
 			Warning int `yaml:"warning"`
 		} `yaml:"cross-link"`
+		ShardHeight struct {
+			Warning int `yaml:"tolerance"`
+		} `yaml:"shard-height"`
 	} `yaml:"shard-health-reporting"`
 	DistributionFiles struct {
 		MachineIPList []string `yaml:"machine-ip-list"`
@@ -309,11 +313,17 @@ func (w *watchParams) sanityCheck() error {
 	if w.HTTPReporter.Port == 0 {
 		errList = append(errList, "Missing port under http-reporter in yaml config")
 	}
+	if w.ShardHealthReporting.Consensus.Interval == 0 {
+		errList = append(errList, "Missing warning under shard-health-reporting, interval in yaml config")
+	}
 	if w.ShardHealthReporting.Consensus.Warning == 0 {
 		errList = append(errList, "Missing warning under shard-health-reporting, consensus in yaml config")
 	}
 	if w.ShardHealthReporting.CrossLink.Warning == 0 {
 		errList = append(errList, "Missing warning under shard-health-reporting, cross-link in yaml config")
+	}
+	if w.ShardHealthReporting.ShardHeight.Warning == 0 {
+		errList = append(errList, "Missing tolerance under shard-health-reporting, shard-height in yaml config")
 	}
 	for _, f := range w.DistributionFiles.MachineIPList {
 		_, err := os.Stat(f)
