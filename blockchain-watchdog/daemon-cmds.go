@@ -141,6 +141,7 @@ func generateSampleYAML() *cobra.Command {
 			sampleParams.HTTPReporter.Port = 8080
 			sampleParams.ShardHealthReporting.Consensus.Interval = 30
 			sampleParams.ShardHealthReporting.Consensus.Warning = 70
+			sampleParams.ShardHealthReporting.CxPending.Warning = 1000
 			sampleParams.ShardHealthReporting.CrossLink.Warning = 600
 			sampleParams.ShardHealthReporting.ShardHeight.Warning = 1000
 			sampleParams.DistributionFiles.MachineIPList = []string{

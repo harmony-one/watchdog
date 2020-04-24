@@ -166,7 +166,7 @@ func checkShardHeight(b BlockHeaderContainer, tolerance uint64,
 		}
 		stdlog.Print(
 			fmt.Sprintf("[checkShardHeight] Shard %d, Max height: %d," +
-				"Number of unique heights: %d, Unique heights: %v",
+				" Number of unique heights: %d, Unique heights: %v",
 				 i, maxHeight, len(uniqueHeights), uniqueHeights),
 		)
 	}

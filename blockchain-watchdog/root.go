@@ -207,6 +207,9 @@ type watchParams struct {
 			Interval int `yaml:"interval"`
 			Warning  int `yaml:"warning"`
 		} `yaml:"consensus"`
+		CxPending struct {
+			Warning int `yaml:"pending-limit"`
+		} `yaml:"cx-pending"`
 		CrossLink struct {
 			Warning int `yaml:"warning"`
 		} `yaml:"cross-link"`
@@ -318,6 +321,9 @@ func (w *watchParams) sanityCheck() error {
 	}
 	if w.ShardHealthReporting.Consensus.Warning == 0 {
 		errList = append(errList, "Missing warning under shard-health-reporting, consensus in yaml config")
+	}
+	if w.ShardHealthReporting.CxPending.Warning == 0 {
+		errList = append(errList, "Missing pending-limit under shard-health-reporting, cx-pending in yaml config")
 	}
 	if w.ShardHealthReporting.CrossLink.Warning == 0 {
 		errList = append(errList, "Missing warning under shard-health-reporting, cross-link in yaml config")
