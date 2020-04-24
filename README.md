@@ -17,9 +17,10 @@ network-config:
 # How often to check, the numbers assumed as seconds
 # block-header RPC must happen first
 inspect-schedule:
-  block-header: 15
-  node-metadata: 30
+  block-header: 10
+  node-metadata: 15
   cx-pending: 300
+  cross-link: 15
 
 # Number of concurrent go threads sending HTTP requests
 # Time in seconds to wait for the HTTP request to succeed
@@ -34,7 +35,14 @@ http-reporter:
 # Numbers assumed as seconds
 shard-health-reporting:
   consensus:
-    warning: 70
+    interval: 10
+    warning: 150
+  cx-pending:
+    pending-limit: 1000
+  cross-link:
+    warning: 600
+  shard-height:
+    tolerance: 100
 
 # Needs to be an absolute file path
 # NOTE: The ending of the basename of the file
