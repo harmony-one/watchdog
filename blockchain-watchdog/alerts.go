@@ -44,4 +44,11 @@ Signature Bitmap: %s
 
 Time since last processed cross link: %f seconds (%f minutes)
 `
+	blockHeightMessage = `
+%s at block height %d, which shard height %d.
+
+Shard: %s
+
+Chain: %s
+`
 )

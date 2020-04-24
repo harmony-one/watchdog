@@ -412,215 +412,8 @@ func (m *monitor) worker(
 	}
 }
 
-func (m *monitor) consensusMonitor(
-	interval uint64, poolSize int, pdServiceKey, chain string, shardMap map[string]int,
-) {
-	jobs := make(chan work, len(shardMap))
-	replyChannels := make(map[string](chan reply))
-	syncGroups := make(map[string]*sync.WaitGroup)
-
-	replyChannels[BlockHeaderRPC] = make(chan reply, len(shardMap))
-	var bhGroup sync.WaitGroup
-	syncGroups[BlockHeaderRPC] = &bhGroup
-
-	for i := 0; i < poolSize; i++ {
-		go m.worker(jobs, replyChannels, syncGroups)
-	}
-
-	requestFields := getRPCRequest(BlockHeaderRPC)
-
-	type s struct {
-		Result BlockHeaderReply `json:"result"`
-	}
-
-	type lastSuccessfulBlock struct {
-		Height uint64
-		TS     time.Time
-	}
-
-	lastShardData := make(map[string]lastSuccessfulBlock)
-	consensusStatus := make(map[string]bool)
-
-	for now := range time.Tick(time.Duration(interval) * time.Second) {
-		queryID := 0
-		for n := range shardMap {
-			requestFields["id"] = strconv.Itoa(queryID)
-			requestBody, _ := json.Marshal(requestFields)
-			jobs <- work{n, BlockHeaderRPC, requestBody}
-			queryID++
-			syncGroups[BlockHeaderRPC].Add(1)
-		}
-		syncGroups[BlockHeaderRPC].Wait()
-		close(replyChannels[BlockHeaderRPC])
-
-		monitorData := BlockHeaderContainer{}
-		for d := range replyChannels[BlockHeaderRPC] {
-			if d.oops != nil {
-				monitorData.Down = append(m.WorkingBlockHeader.Down,
-					noReply{d.address, d.oops.Error(), string(d.rpcPayload), shardMap[d.address]})
-			} else {
-				oneReport := s{}
-				json.Unmarshal(d.rpcResult, &oneReport)
-				monitorData.Nodes = append(monitorData.Nodes, BlockHeader{
-					oneReport.Result,
-					d.address,
-				})
-			}
-		}
-
-		blockHeaderData := any{}
-		blockHeaderSummary(monitorData.Nodes, true, blockHeaderData)
-
-		currentUTCTime := now.UTC()
-
-		for shard, summary := range blockHeaderData {
-			currentBlockHeight := summary.(any)[blockMax].(uint64)
-			currentBlockHeader := summary.(any)["latest-block"].(BlockHeader)
-			if lastBlock, exists := lastShardData[shard]; exists {
-				if currentBlockHeight <= lastBlock.Height {
-					timeSinceLastSuccess := currentUTCTime.Sub(lastBlock.TS)
-					if uint64(timeSinceLastSuccess.Seconds()) > interval {
-						message := fmt.Sprintf(consensusMessage,
-							shard, currentBlockHeight, lastBlock.TS.Format(timeFormat),
-							currentBlockHeader.Payload.BlockHash, currentBlockHeader.Payload.Leader,
-							currentBlockHeader.Payload.ViewID, currentBlockHeader.Payload.Epoch,
-							currentBlockHeader.Payload.Timestamp, currentBlockHeader.Payload.LastCommitSig,
-							currentBlockHeader.Payload.LastCommitBitmap,
-							int64(timeSinceLastSuccess.Seconds()), timeSinceLastSuccess.Minutes(), chain)
-						incidentKey := fmt.Sprintf("Shard %s consensus stuck! - %s", shard, chain)
-						err := notify(pdServiceKey, incidentKey, chain, message)
-						if err != nil {
-							errlog.Print(err)
-						} else {
-							stdlog.Print("Sent PagerDuty alert! %s", incidentKey)
-						}
-						consensusStatus[shard] = false
-						continue
-					}
-				}
-			}
-			lastShardData[shard] = lastSuccessfulBlock{currentBlockHeight, time.Unix(currentBlockHeader.Payload.UnixTime, 0).UTC()}
-			consensusStatus[shard] = true
-		}
-		stdlog.Printf("Total no reply machines: %d", len(monitorData.Down))
-		stdlog.Print(lastShardData)
-		stdlog.Print(consensusStatus)
-
-		m.inUse.Lock()
-		m.consensusProgress = consensusStatus
-		m.inUse.Unlock()
-		replyChannels[BlockHeaderRPC] = make(chan reply, len(shardMap))
-	}
-}
-
-func (m *monitor) cxMonitor(interval uint64, poolSize int, pdServiceKey, chain string, shardMap map[string]int) {
-	cxRequestFields := getRPCRequest(PendingCXRPC)
-	nodeRequestFields := getRPCRequest(NodeMetadataRPC)
-
-	jobs := make(chan work, len(shardMap))
-	replyChannels := make(map[string](chan reply))
-	syncGroups := make(map[string]*sync.WaitGroup)
-	for _, rpc := range []string{NodeMetadataRPC, PendingCXRPC} {
-		replyChannels[rpc] = make(chan reply, len(shardMap))
-		switch rpc {
-		case NodeMetadataRPC:
-			var mGroup sync.WaitGroup
-			syncGroups[rpc] = &mGroup
-		case PendingCXRPC:
-			var cxGroup sync.WaitGroup
-			syncGroups[rpc] = &cxGroup
-		}
-	}
-
-	for i := 0; i < poolSize; i++ {
-		go m.worker(jobs, replyChannels, syncGroups)
-	}
-
-	type r struct {
-		Result NodeMetadataReply `json:"result"`
-	}
-
-	type a struct {
-		Result uint64 `json:"result"`
-	}
-
-	for range time.Tick(time.Duration(interval) * time.Second) {
-		queryID := 0
-		// Send requests to find potential shard leaders
-		for n := range shardMap {
-			nodeRequestFields["id"] = strconv.Itoa(queryID)
-			requestBody, _ := json.Marshal(nodeRequestFields)
-			jobs <- work{n, NodeMetadataRPC, requestBody}
-			queryID++
-			syncGroups[NodeMetadataRPC].Add(1)
-		}
-		syncGroups[NodeMetadataRPC].Wait()
-		close(replyChannels[NodeMetadataRPC])
-
-		leaders := make(map[int][]string)
-		for d := range replyChannels[NodeMetadataRPC] {
-			if d.oops == nil {
-				oneReport := r{}
-				json.Unmarshal(d.rpcResult, &oneReport)
-				if oneReport.Result.IsLeader {
-					shard := int(oneReport.Result.ShardID)
-					leaders[shard] = append(leaders[shard], d.address)
-				}
-			}
-		}
-
-		// What do in case of no leader shown (skip cycle for shard)
-		// No reply also skip
-		queryID = 0
-		for _, node := range leaders {
-			for _, n := range node {
-				cxRequestFields["id"] = strconv.Itoa(queryID)
-				requestBody, _ := json.Marshal(cxRequestFields)
-				jobs <- work{n, PendingCXRPC, requestBody}
-				queryID++
-				syncGroups[PendingCXRPC].Add(1)
-			}
-		}
-		syncGroups[PendingCXRPC].Wait()
-		close(replyChannels[PendingCXRPC])
-
-		cxPoolSize := make(map[int][]uint64)
-		for i := range replyChannels[PendingCXRPC] {
-			if i.oops == nil {
-				report := a{}
-				json.Unmarshal(i.rpcResult, &report)
-				shard := 0
-				for s, v := range leaders {
-					for _, n := range v {
-						if n == i.address {
-							shard = s
-							break
-						}
-					}
-				}
-				cxPoolSize[shard] = append(cxPoolSize[shard], report.Result)
-				if report.Result > uint64(1000) {
-					message := fmt.Sprintf(crossShardTransactionMessage, shard, report.Result)
-					incidentKey := fmt.Sprintf("Shard %d cx transaction pool size > 1000! - %s", shard, chain)
-					err := notify(pdServiceKey, incidentKey, chain, message)
-					if err != nil {
-						errlog.Print(err)
-					} else {
-						stdlog.Print("Sent PagerDuty alert! %s", incidentKey)
-					}
-				}
-			}
-		}
-
-		stdlog.Print(leaders)
-		stdlog.Print(cxPoolSize)
-
-		replyChannels[NodeMetadataRPC] = make(chan reply, len(shardMap))
-		replyChannels[PendingCXRPC] = make(chan reply, len(shardMap))
-	}
-}
-
 func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
+	stdlog.Print("[stakingCommitteeUpdate] Updating super committees...")
 	committeeRequestFields := getRPCRequest(SuperCommitteeRPC)
 
 	committeeRequestFields["id"] = "0"
@@ -632,14 +425,13 @@ func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
 	}
 
 	if oops != nil {
-		stdlog.Println("Unable to update Staking Committee")
-		stdlog.Print(oops)
+		stdlog.Println("[stakingCommitteeUpdate] Unable to update Staking Committee")
 		return
 	}
 	committeeReply := s{}
 	json.Unmarshal(result, &committeeReply)
 	m.SuperCommittee = committeeReply.Result
-	stdlog.Println("Updated Staking Committee information")
+	stdlog.Println("[stakingCommitteeUpdate] Updated staking committee information")
 }
 
 func (m *monitor) manager(
@@ -763,7 +555,9 @@ func (m *monitor) update(
 			)
 			go m.stakingCommitteeUpdate(getBeaconChainNode(shardMap))
 			go m.consensusMonitor(
+				uint64(params.ShardHealthReporting.Consensus.Interval),
 				uint64(params.ShardHealthReporting.Consensus.Warning),
+				uint64(params.ShardHealthReporting.ShardHeight.Warning),
 				params.Performance.WorkerPoolSize,
 				params.Auth.PagerDuty.EventServiceKey,
 				params.Network.TargetChain,
@@ -771,6 +565,7 @@ func (m *monitor) update(
 			)
 			go m.cxMonitor(
 				uint64(params.InspectSchedule.CxPending),
+				uint64(params.ShardHealthReporting.CxPending.Warning),
 				params.Performance.WorkerPoolSize,
 				params.Auth.PagerDuty.EventServiceKey,
 				params.Network.TargetChain,
