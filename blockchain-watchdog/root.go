@@ -158,8 +158,8 @@ func (service *Service) monitorNetwork() error {
 	// loop work cycle with accept connections or interrupt
 	// by system signal
 	killSignal := <-interrupt
-	stdlog.Println("Got signal:", killSignal)
-	stdlog.Println("Stopping listening on ", listener.Addr())
+	stdlog.Println("[monitorNetwork] Got signal:", killSignal)
+	stdlog.Println("[monitorNetwork] Stopping listening on ", listener.Addr())
 	listener.Close()
 	if killSignal == os.Interrupt {
 		return errSysIntrpt

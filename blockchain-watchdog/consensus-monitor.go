@@ -105,7 +105,7 @@ func (m *monitor) consensusMonitor(
 						if err != nil {
 							errlog.Print(err)
 						} else {
-							stdlog.Print("Sent PagerDuty alert! %s", incidentKey)
+							stdlog.Print("[consensusMonitor] Sent PagerDuty alert! %s", incidentKey)
 						}
 						consensusStatus[shard] = false
 						continue
@@ -117,9 +117,10 @@ func (m *monitor) consensusMonitor(
 			}
 			consensusStatus[shard] = true
 		}
-		stdlog.Printf("Total no reply machines: %d", len(monitorData.Down))
-		stdlog.Print(lastShardData)
-		stdlog.Print(consensusStatus)
+		stdlog.Print(fmt.Sprintf("[consensusMonitor] Total no reply machines: %d", len(monitorData.Down)))
+	  for s, b := range consensusStatus {
+			stdlog.Print(fmt.Sprintf("[consensusMonitor] Shard %s, Consensus: %v", s, b))
+		}
 
 		m.inUse.Lock()
 		m.consensusProgress = consensusStatus
