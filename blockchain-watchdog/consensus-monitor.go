@@ -72,7 +72,7 @@ func (m *monitor) consensusMonitor(
 		containerCopy := BlockHeaderContainer{}
 		containerCopy.Nodes = append([]BlockHeader{}, monitorData.Nodes...)
 
-		go checkShardHeight(containerCopy, tolerance, pdServiceKey, chain)
+		go checkShardHeight(containerCopy, warning, tolerance, pdServiceKey, chain)
 
 		blockHeaderData := any{}
 		blockHeaderSummary(monitorData.Nodes, true, blockHeaderData)
@@ -129,7 +129,7 @@ func (m *monitor) consensusMonitor(
 	}
 }
 
-func checkShardHeight(b BlockHeaderContainer, tolerance uint64,
+func checkShardHeight(b BlockHeaderContainer, syncTimer, tolerance uint64,
 	pdServiceKey, chain string,
 ) {
 	stdlog.Print("[checkShardHeight] Running shard height check...")
@@ -161,7 +161,7 @@ func checkShardHeight(b BlockHeaderContainer, tolerance uint64,
 			if maxHeight - uint64(h) > tolerance {
 				for _, v := range shardHeightMap[i][uint64(h)] {
 					go checkSync(v.IP, pdServiceKey, chain,
-						v.Payload.BlockNumber, maxHeight)
+						v.Payload.BlockNumber, maxHeight, syncTimer)
 				}
 			}
 		}
@@ -174,13 +174,12 @@ func checkShardHeight(b BlockHeaderContainer, tolerance uint64,
 }
 
 func checkSync(IP, pdServiceKey, chain string,
-	blockNumber, shardHeight uint64,
+	blockNumber, shardHeight, syncTimer uint64,
 ) {
-	stdlog.Print(fmt.Sprintf("[checkSync] Checking IP %s progress...", IP))
-	// Sleep 10 seconds to check for progress
-	time.Sleep(10)
+	stdlog.Print(fmt.Sprintf("[checkSync] Sleeping %d to check IP %s progress", syncTimer, IP))
+	// Check for progress after checking consensus time
+	time.Sleep(time.Second * time.Duration(syncTimer))
 
-	// Send BlockHeader request
 	requestFields := getRPCRequest(BlockHeaderRPC)
 	requestFields["id"] = strconv.Itoa(0)
 	requestBody, _ := json.Marshal(requestFields)
