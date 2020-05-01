@@ -117,7 +117,7 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 			}
 		}
 		for s, c := range lastProcessed {
-			stdlog.Print(fmt.Sprintf("[crossLinkMonitor] Shard: %d, Last Crosslink: %d", s, c))
+			stdlog.Print(fmt.Sprintf("[crossLinkMonitor] Shard: %d, Last Crosslink: %v", s, c))
 		}
 		replyChannels[NodeMetadataRPC] = make(chan reply, len(shardMap))
 		replyChannels[LastCrossLinkRPC] = make(chan reply, len(shardMap))
