@@ -85,7 +85,7 @@ func (m *monitor) consensusMonitor(
 			if lastBlock, exists := lastShardData[shard]; exists {
 				if currentBlockHeight <= lastBlock.Height {
 					timeSinceLastSuccess := currentUTCTime.Sub(lastBlock.TS)
-					if uint64(timeSinceLastSuccess.Seconds()) > warning {
+					if timeSinceLastSuccess.Seconds() > 0 && uint64(timeSinceLastSuccess.Seconds()) > warning {
 						message := fmt.Sprintf(consensusMessage,
 							shard, currentBlockHeight, lastBlock.TS.Format(timeFormat),
 							currentBlockHeader.Payload.BlockHash,
