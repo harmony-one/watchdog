@@ -207,7 +207,10 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 				return s[len(s)-1:]
 			},
 			"calcConnectivity": func(connected, known int) string {
-				return fmt.Sprintf("%d%%", int(float64(connected)/float64(known) * 100))
+				if known != 0 {
+					return fmt.Sprintf("%d%%", int(float64(connected)/float64(known) * 100))
+				}
+				return "N/A"
 			},
 			"convertUnixTime": func(t int64) string {
 				return time.Unix(t, 0).UTC().Format(timeFormat)
