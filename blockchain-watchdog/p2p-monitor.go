@@ -28,10 +28,14 @@ func (m *monitor) p2pMonitor(tolerance int, pdServiceKey, chain string, data Met
 			percent = append(percent, connection)
 		}
 	}
-	sum := 0
-	for _, value := range percent {
-		sum = sum + value
+	if len(percent) > 0 {
+		sum := 0
+		for _, value := range percent {
+			sum = sum + value
+		}
+		avg := float64(sum) / float64(len(percent))
+		stdlog.Print(fmt.Sprintf("[p2pMonitor] Avg Connectivity: %f", avg))
+	} else {
+		stdlog.Print("[p2pMonitor] Avg Connectivity: N/A")
 	}
-	avg := float64(sum) / float64(len(percent))
-	stdlog.Print(fmt.Sprintf("[p2pMonitor] Avg Connectivity: %f", avg))
 }
