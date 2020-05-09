@@ -20,6 +20,7 @@ type NodeMetadataReply struct {
 	BlocksPerEpoch int      `json:"blocks-per-epoch"`
 	DNSZone        string   `json:"dns-zone,omitempty"`
 	ArchivalNode   bool     `json:"is-archival,omitempty"`
+	NodeStartTime  int64    `json:"node-unix-start-time"`
 	ChainConfig    struct {
 		ChainID         int `json:"chain-id"`
 		CrossLinkEpoch  int `json:"cross-link-epoch"`

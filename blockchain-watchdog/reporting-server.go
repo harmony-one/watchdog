@@ -206,6 +206,25 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 			"getShardID": func(s string) string {
 				return s[len(s)-1:]
 			},
+			"calcConnectivity": func(connected, known int) string {
+				return fmt.Sprintf("%d%%", int(float64(connected)/float64(known) * 100))
+			},
+			"convertUnixTime": func(t int64) string {
+				return time.Unix(t, 0).UTC().Format(timeFormat)
+			},
+			"getShortBLSKey": func(keys []string) string {
+				displayStr := ""
+				if len(keys) == 0 {
+					displayStr = "No BLS keys"
+				}
+				for i, k := range keys {
+					displayStr = displayStr + k[:3] + "..." + k[len(k) - 3:]
+					if i != len(keys) - 1 {
+						displayStr = displayStr + "<br>"
+					}
+				}
+				return displayStr
+			},
 		}).
 		Parse(reportPage(m.chain))
 	if e != nil {
