@@ -50,18 +50,18 @@ body {font-family: "Open Sans", sans-serif;}
 .center { align-items: center; }
 .stat-box { box-shadow: 0 2px 2px 0px rgba(0, 0, 0, 0.9); padding: 10px; background-color:#7F9A95;}
 .stat-field {
-	display: flex;
-	justify-content:space-between;
+  display: flex;
+  justify-content:space-between;
 }
 .flex-both {
-	display: flex;
-	flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 @media only screen and (min-width: 670px) {
-	.flex-both {
-		display: flex;
-		flex-direction: row;
-	}
+  .flex-both {
+    display: flex;
+    flex-direction: row;
+  }
 }
 th {
   background: #c9d1ac;
@@ -115,12 +115,12 @@ hr:after {
       <div class="build-stat">
         <div class="flex-row space-between">
           <div class="flex-col">
-          {{range .LeftTitle}}
+          {{ range .LeftTitle }}
             <span class="build-stat-values">{{.}}</span>
           {{end}}
           </div>
           <div class="flex-col">
-          {{range .RightTitle}}
+          {{ range .RightTitle }}
             <span class="build-stat-values align-right">{{.}}</span>
           {{end}}
           </div>
@@ -128,9 +128,9 @@ hr:after {
       </div>
       <hr/>
       <div class="build-stat flex-both">
-        {{$root := .}}
+        {{ $root := . }}
         {{ with (index .Summary "chain-config") }}
-        {{range $key, $value := .}}
+        {{ range $key, $value := . }}
           <div class="flex-col center stat-box">
             <a href="#shard-{{$key}}">Shard-{{$key}}</a>
             <p><span>Consensus:</span><span> {{index $value "consensus-status"}}</span></p>
@@ -185,8 +185,8 @@ hr:after {
         {{end}}
       </div>
     </header>
-    <main>
 
+    <main>
     {{ if ne (len .NoReply) 0 }}
     <section class="report-wrapper">
       <div class="summary-details">
@@ -201,7 +201,7 @@ hr:after {
             </p>
           </div>
           <div class="flex-row">
-            <p>Distinct down machine count: {{ .DownMachineCount }} </p>
+            <p>Distinct down machine count: {{ .DownMachineCount }}</p>
           </div>
         </div>
       </div>
@@ -240,16 +240,16 @@ hr:after {
             <a href="/report-download-%s?report=%s&shard={{$key}}">Download CSV</a>
           </div>
           <div class="flex-row">
-            <p> shard: {{ $key }} </p>
-            <p> node count: {{ len (index $value "records") }} </p>
-            <p> max block: {{index $value "block-max"}}</p>
-            <p> min block: {{index $value "block-min"}}</p>
-            <p> max epoch: {{index $value "epoch-max"}}</p>
-            <p> min epoch: {{index $value "epoch-min"}}</p>
+            <p>Shard: {{ $key }}</p>
+            <p>Nodes: {{ len (index $value "records") }}</p>
+            <p>Max Block: {{ index $value "block-max" }}</p>
+            <p>Min Block: {{ index $value "block-min" }}</p>
+            <p>Max Epoch: {{ index $value "epoch-max" }}</p>
+            <p>Min Epoch: {{ index $value "epoch-min" }}</p>
           </div>
           <div class="flex-row">
-            <p> unique block: {{index $value "uniq-blocks"}}</p>
-            <p> unique epochs: {{index $value "uniq-epochs"}}</p>
+            <p>Unique Blocks: {{ index $value "uniq-blocks" }}</p>
+            <p>Unique Epochs: {{ index $value "uniq-epochs" }}</p>
           </div>
         </div>
       </div>
@@ -263,7 +263,6 @@ hr:after {
 	    <th>Leader</th>
 	    <th>ViewID</th>
 	    <th>Timestamp</th>
-	    <th>Unixtime</th>
 	    <th>Last Commit Sig</th>
 	    <th>Last Commit Bitmap</th>
 	  </tr>
@@ -273,22 +272,20 @@ hr:after {
           {{range .}}
           <tr>
             <td>{{.IP}} </td>
-            <td>{{.Payload.BlockHash}} </td>
-            <td>{{.Payload.Epoch}} </td>
-            <td>{{.Payload.BlockNumber}} </td>
-            <td>{{.Payload.Leader}} </td>
-            <td>{{.Payload.ViewID}} </td>
-            <td>{{.Payload.Timestamp}} </td>
-            <td>{{.Payload.UnixTime}} </td>
-            <td>{{.Payload.LastCommitSig}} </td>
-            <td>{{.Payload.LastCommitBitmap}} </td>
+            <td>{{ .Payload.BlockHash }}</td>
+            <td>{{ .Payload.Epoch }}</td>
+            <td>{{ .Payload.BlockNumber }}</td>
+            <td>{{ .Payload.Leader }}</td>
+            <td>{{ .Payload.ViewID }}</td>
+            <td>{{ convertUnixTime .Payload.UnixTime }}</td>
+            <td>{{ .Payload.LastCommitSig }}</td>
+            <td>{{ .Payload.LastCommitBitmap }}</td>
           </tr>
           {{end}}
           {{end}}
         </tbody>
       </table>
     </section>
-
     {{end}}
     {{end}}
 
@@ -304,8 +301,8 @@ hr:after {
             <a href="/report-download-%s?report=%s&vrs={{$key}}">Download CSV</a>
           </div>
           <div class="flex-row">
-            <p> build version: {{ $key }} </p>
-            <p> node count: {{ len (index $value "records") }} </p>
+            <p>Build Version: {{ $key }}</p>
+            <p>Nodes: {{ len (index $value "records") }}</p>
           </div>
         </div>
       </div>
@@ -313,7 +310,7 @@ hr:after {
         <thead>
 	  <tr>
 	    <th>IP</th>
-	    <th>BLS Key</th>
+	    <th>BLSKey</th>
 	    <th>Version</th>
 	    <th>Network Type</th>
 	    <th>ChainID</th>
@@ -322,6 +319,8 @@ hr:after {
 	    <th>Archival</th>
 	    <th>Connected Peers</th>
 	    <th>Total Peers</th>
+	    <th>Connectivity</th>
+	    <th>Start Time</th>
 	  </tr>
         </thead>
         <tbody>
@@ -329,7 +328,7 @@ hr:after {
           {{ range . }}
           <tr class="{{if .Payload.IsLeader}}is-leader{{end}}">
             <td>{{ .IP }}</td>
-            <td>{{ .Payload.BLSPublicKey }}</td>
+            <td>{{ getShortBLSKey .Payload.BLSPublicKey }}</td>
             <td>{{ .Payload.Version }}</td>
             <td>{{ .Payload.NetworkType }}</td>
             <td>{{ .Payload.ChainConfig.ChainID }}</td>
@@ -338,18 +337,20 @@ hr:after {
             <td>{{ .Payload.ArchivalNode }}</td>
             <td>{{ .Payload.P2PConnectivity.Connected }}</td>
             <td>{{ .Payload.P2PConnectivity.TotalKnown }}</td>
+            <td>{{ calcConnectivity .Payload.P2PConnectivity.Connected .Payload.P2PConnectivity.TotalKnown }}</td>
+            <td>{{ convertUnixTime .Payload.NodeStartTime }}</td>
           </tr>
           {{end}}
           {{end}}
         </tbody>
       </table>
     </section>
-		{{ end }}
-		{{ end }}
+    {{ end }}
+    {{ end }}
 
-		{{ with .SuperCommittee }}
+    {{ with .SuperCommittee }}
     {{ range $key, $value := .CurrentCommittee.Deciders}}
-		{{ $shard := getShardID $key }}
+    {{ $shard := getShardID $key }}
     <section class="report-wrapper" id="current-committee-{{ $shard }}">
       <input type="checkbox" id="curr-hn-toggle-{{ $shard }}">
       <label for="curr-hn-toggle-{{ $shard }}">show harmony nodes</label>
@@ -360,24 +361,24 @@ hr:after {
               Shard {{ $shard }} Current Committee <span><a href="#top-of-page">(Top)</a></span>
            </h3>
           </div>
-					{{ with $value }}
+          {{ with $value }}
           <div class="flex-row">
-						<div class="flex-col">
-					  	<p> policy: {{ .PolicyType }} </p>
-              <p> member count: {{ .MemberCount }} </p>
-						</div>
-						<div class="flex-col">
-            	<p> harmony voting power: {{ .HarmonyPower }} </p>
-            	<p> staked voting power: {{ .StakedPower }} </p>
-            	<p> total raw stake: {{ .TotalRawStake }} </p>
-          	</div>
-					</div>
+            <div class="flex-col">
+              <p>Policy: {{ .PolicyType }}</p>
+              <p>Members: {{ .MemberCount }}</p>
+            </div>
+            <div class="flex-col">
+              <p>Internal Vote Power: {{ .HarmonyPower }}</p>
+              <p>Staked Vote Power: {{ .StakedPower }}</p>
+              <p>Total Raw Stake: {{ .TotalRawStake }}</p>
+            </div>
+          </div>
         </div>
       </div>
       <table class="sortable-theme-bootstrap report-table" data-sortable>
         <thead>
 	  <tr>
-			<th>Address</th>
+            <th>Address</th>
 	    <th>BLSKey</th>
 	    <th>Is Harmony Node</th>
 	    <th>Voting Power</th>
@@ -388,80 +389,80 @@ hr:after {
         <tbody>
           {{ range .Committee }}
           {{ with . }}
-					<tr class="curr-harmony-node-{{ $shard }}-{{.IsHarmonyNode}}">
-            <td>{{.Address}}</td>
-            <td>{{.BLSKey}}</td>
-            <td>{{.IsHarmonyNode}}</td>
-            <td>{{.VotingPower}}</td>
-            <td>{{.RawPercent}}</td>
-            <td>{{.EffectiveStake}}</td>
+          <tr class="curr-harmony-node-{{ $shard }}-{{.IsHarmonyNode}}">
+            <td>{{ .Address }}</td>
+            <td>{{ getShortBLSKey .BLSKey }}</td>
+            <td>{{ .IsHarmonyNode }}</td>
+            <td>{{ .VotingPower }}</td>
+            <td>{{ .RawPercent }}</td>
+            <td>{{ .EffectiveStake }}</td>
           </tr>
           {{end}}
           {{end}}
         </tbody>
       </table>
     </section>
-		{{end}}
     {{end}}
-		{{end}}
+    {{end}}
+    {{end}}
 
-		{{ with .SuperCommittee }}
-		{{ range $key, $value := .PreviousCommittee.Deciders}}
-		{{ $shard := getShardID $key }}
-		<section class="report-wrapper" id="previous-committee-{{ $shard }}">
+    {{ with .SuperCommittee }}
+    {{ range $key, $value := .PreviousCommittee.Deciders }}
+    {{ $shard := getShardID $key }}
+    <section class="report-wrapper" id="previous-committee-{{ $shard }}">
       <input type="checkbox" id="prev-hn-toggle-{{ $shard }}">
       <label for="prev-hn-toggle-{{ $shard }}">show harmony nodes</label>
-			<div class="summary-details">
-				<div class="flex-col">
-					<div class="flex-row">
-						<h3>
-							Shard {{ $shard }} Previous Commitee <span><a href="#top-of-page">(Top)</a></span>
-					 </h3>
-					</div>
-					{{ with $value }}
-					<div class="flex-row">
-						<div class="flex-col">
-							<p> policy: {{ .PolicyType }} </p>
-              <p> member count: {{ .MemberCount }} </p>
-						</div>
-						<div class="flex-col">
-							<p> harmony voting power: {{ .HarmonyPower }} </p>
-							<p> staked voting power: {{ .StakedPower }} </p>
-							<p> total raw stake: {{ .TotalRawStake }} </p>
-						</div>
-					</div>
-				</div>
-			</div>
-			<table class="sortable-theme-bootstrap report-table" data-sortable>
-				<thead>
-		<tr>
-			<th>Address</th>
-			<th>BLSKey</th>
-			<th>Is Harmony Node</th>
-			<th>Voting Power</th>
-			<th>External Vote Power</th>
-			<th>Effective Stake</th>
-		</tr>
-				</thead>
-				<tbody>
-					{{ range .Committee }}
-					{{ with . }}
-					<tr class="prev-harmony-node-{{ $shard }}-{{ .IsHarmonyNode }}">
-						<td>{{.Address}}</td>
-						<td>{{.BLSKey}}</td>
-						<td>{{.IsHarmonyNode}}</td>
-						<td>{{.VotingPower}}</td>
-						<td>{{.RawPercent}}</td>
-						<td>{{.EffectiveStake}}</td>
-					</tr>
-					{{end}}
-					{{end}}
-				</tbody>
-			</table>
-		</section>
-		{{end}}
-		{{end}}
-		{{end}}
+      <div class="summary-details">
+         <div class="flex-col">
+           <div class="flex-row">
+	     <h3>
+               Shard {{ $shard }} Previous Commitee <span><a href="#top-of-page">(Top)</a></span>
+             </h3>
+           </div>
+           {{ with $value }}
+           <div class="flex-row">
+             <div class="flex-col">
+               <p>Policy: {{ .PolicyType }}</p>
+               <p>Member Count: {{ .MemberCount }}</p>
+             </div>
+             <div class="flex-col">
+               <p>Internal Vote Power: {{ .HarmonyPower }}</p>
+               <p>Staked Vote Power: {{ .StakedPower }}</p>
+               <p>Total Raw Staked: {{ .TotalRawStake }}</p>
+             </div>
+           </div>
+         </div>
+       </div>
+       <table class="sortable-theme-bootstrap report-table" data-sortable>
+         <thead>
+           <tr>
+             <th>Address</th>
+             <th>BLSKey</th>
+             <th>Is Harmony Node</th>
+             <th>Voting Power</th>
+             <th>External Vote Power</th>
+             <th>Effective Stake</th>
+           </tr>
+         </thead>
+         <tbody>
+           {{ range .Committee }}
+           {{ with . }}
+           <tr class="prev-harmony-node-{{ $shard }}-{{ .IsHarmonyNode }}">
+             <td>{{ .Address }}</td>
+             <td>{{ getShortBLSKey .BLSKey }}</td>
+             <td>{{ .IsHarmonyNode }}</td>
+             <td>{{ .VotingPower }}</td>
+             <td>{{ .RawPercent }}</td>
+             <td>{{ .EffectiveStake }}</td>
+           </tr>
+           {{end}}
+           {{end}}
+         </tbody>
+       </table>
+     </section>
+     {{end}}
+     {{end}}
+     {{end}}
 
     </main>
 <script>
