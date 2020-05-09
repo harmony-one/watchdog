@@ -25,7 +25,7 @@ func (m *monitor) p2pMonitor(tolerance int, pdServiceKey, chain string, data Met
 				sum = sum + v
 			}
 			avg = int(float64(sum) / float64(len(values)))
-			if avg < tolerance {
+			if avg != 0 && avg < tolerance {
 				message := fmt.Sprintf(p2pMessage, shard, avg)
 				incidentKey := fmt.Sprintf("Shard %d connectivity lower than threshold - %s", shard, chain)
 				err := notify(pdServiceKey, incidentKey, chain, message)
