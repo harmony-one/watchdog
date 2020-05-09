@@ -319,7 +319,9 @@ hr:after {
 	    <th>ChainID</th>
 	    <th>ShardID</th>
 	    <th>Role</th>
-	    <th>IsArchivalNode</th>
+	    <th>Archival</th>
+	    <th>Connected Peers</th>
+	    <th>Total Peers</th>
 	  </tr>
         </thead>
         <tbody>
@@ -334,6 +336,8 @@ hr:after {
             <td>{{ .Payload.ShardID }}</td>
             <td>{{ .Payload.NodeRole }}</td>
             <td>{{ .Payload.ArchivalNode }}</td>
+            <td>{{ .Payload.P2PConnectivity.Connected }}</td>
+            <td>{{ .Payload.P2PConnectivity.TotalKnown }}</td>
           </tr>
           {{end}}
           {{end}}

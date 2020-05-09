@@ -435,8 +435,8 @@ func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
 }
 
 func (m *monitor) manager(
-	jobs chan work, interval int, shardMap map[string]int,
-	rpc string, group *sync.WaitGroup,
+	jobs chan work, interval, tolerance int, shardMap map[string]int,
+	rpc, pdServiceKey, chain string, group *sync.WaitGroup,
 	channels map[string](chan reply),
 ) {
 	requestFields := getRPCRequest(rpc)
@@ -476,6 +476,12 @@ func (m *monitor) manager(
 					m.bytesToNodeMetadata(d.rpc, d.address, d.rpcResult)
 				}
 			}
+
+			containerCopy := MetadataContainer{}
+			containerCopy.Nodes = append([]NodeMetadata{}, m.WorkingMetadata.Nodes...)
+
+			go m.p2pMonitor(tolerance, pdServiceKey, chain, containerCopy)
+
 			m.inUse.Lock()
 			m.metadataCopy(m.WorkingMetadata)
 			m.inUse.Unlock()
@@ -546,12 +552,19 @@ func (m *monitor) update(
 		case NodeMetadataRPC:
 			go m.manager(
 				jobs, params.InspectSchedule.NodeMetadata,
-				shardMap, rpc, syncGroups[rpc], replyChannels,
+				params.ShardHealthReporting.Connectivity.Warning,
+				shardMap, rpc,
+				params.Auth.PagerDuty.EventServiceKey,
+				params.Network.TargetChain,
+				syncGroups[rpc], replyChannels,
 			)
 		case BlockHeaderRPC:
+			// TODO: Refactor manager
 			go m.manager(
-				jobs, params.InspectSchedule.BlockHeader,
-				shardMap, rpc, syncGroups[rpc], replyChannels,
+				jobs, params.InspectSchedule.BlockHeader, 0,
+				shardMap, rpc,
+				"", "",
+				syncGroups[rpc], replyChannels,
 			)
 			go m.stakingCommitteeUpdate(getBeaconChainNode(shardMap))
 			go m.consensusMonitor(

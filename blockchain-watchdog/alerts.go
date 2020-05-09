@@ -51,4 +51,11 @@ Shard: %d
 
 Chain: %s
 `
+	p2pMessage = `
+IP: %s
+
+Connected Peers: %d
+
+Total Known Peers: %d
+`
 )

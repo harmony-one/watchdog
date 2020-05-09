@@ -42,7 +42,9 @@ shard-health-reporting:
   cross-link:
     warning: 600
   shard-height:
-    tolerance: 100
+    tolerance: 1000
+  connectivity:
+    tolerance: 33
 
 # Needs to be an absolute file path
 # NOTE: The ending of the basename of the file

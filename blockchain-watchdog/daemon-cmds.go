@@ -144,6 +144,7 @@ func generateSampleYAML() *cobra.Command {
 			sampleParams.ShardHealthReporting.CxPending.Warning = 1000
 			sampleParams.ShardHealthReporting.CrossLink.Warning = 600
 			sampleParams.ShardHealthReporting.ShardHeight.Warning = 1000
+			sampleParams.ShardHealthReporting.Connectivity.Warning = 33
 			sampleParams.DistributionFiles.MachineIPList = []string{
 				"/home/ec2_user/mainnet/shard0.txt",
 				"/home/ec2_user/mainnet/shard1.txt",
