@@ -216,6 +216,9 @@ type watchParams struct {
 		ShardHeight struct {
 			Warning int `yaml:"tolerance"`
 		} `yaml:"shard-height"`
+		Connectivity  struct {
+			Warning int `yaml:"tolerance"`
+		} `yaml:"connectivity"`
 	} `yaml:"shard-health-reporting"`
 	DistributionFiles struct {
 		MachineIPList []string `yaml:"machine-ip-list"`
@@ -330,6 +333,9 @@ func (w *watchParams) sanityCheck() error {
 	}
 	if w.ShardHealthReporting.ShardHeight.Warning == 0 {
 		errList = append(errList, "Missing tolerance under shard-health-reporting, shard-height in yaml config")
+	}
+	if w.ShardHealthReporting.Connectivity.Warning == 0 {
+		errList = append(errList, "Missing tolerance under shard-health-reporting, connectivity in yaml config")
 	}
 	for _, f := range w.DistributionFiles.MachineIPList {
 		_, err := os.Stat(f)

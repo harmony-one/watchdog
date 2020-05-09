@@ -29,6 +29,11 @@ type NodeMetadataReply struct {
 		S3Epoch         int `json:"s3-epoch"`
 		StakingEpoch    int `json:"staking-epoch"`
 	} `json:"chain-config"`
+	P2PConnectivity struct {
+		Connected    int `json:"connected"`
+		NotConnected int `json:"not-connected"`
+		TotalKnown   int `json:"total-known-peers"`
+	} `json:"p2p-connectivity"`
 }
 
 type NodeMetadata struct {

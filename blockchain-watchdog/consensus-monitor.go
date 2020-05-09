@@ -105,7 +105,7 @@ func (m *monitor) consensusMonitor(
 						if err != nil {
 							errlog.Print(err)
 						} else {
-							stdlog.Print("[consensusMonitor] Sent PagerDuty alert! %s", incidentKey)
+							stdlog.Print(fmt.Sprintf("[consensusMonitor] Sent PagerDuty alert! %s", incidentKey))
 						}
 						consensusStatus[shard] = false
 						continue
