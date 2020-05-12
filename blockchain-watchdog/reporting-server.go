@@ -220,10 +220,15 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 				if len(keys) == 0 {
 					displayStr = "No BLS keys"
 				}
+				count := len(keys)
 				for i, k := range keys {
-					displayStr = displayStr + k[:3] + "..." + k[len(k) - 3:]
-					if i != len(keys) - 1 {
-						displayStr = displayStr + ", "
+					if len(k) == 96 {  // Valid BLS keys are 96 characters long
+						displayStr = displayStr + k[:3] + "..." + k[len(k) - 3:]
+						if i != count {
+							displayStr = displayStr + ", "
+						}
+					} else {
+						count = count - 1
 					}
 				}
 				return displayStr
