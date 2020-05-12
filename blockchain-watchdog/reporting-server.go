@@ -223,7 +223,7 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 				for i, k := range keys {
 					displayStr = displayStr + k[:3] + "..." + k[len(k) - 3:]
 					if i != len(keys) - 1 {
-						displayStr = displayStr + "<br>"
+						displayStr = displayStr + ", "
 					}
 				}
 				return displayStr
