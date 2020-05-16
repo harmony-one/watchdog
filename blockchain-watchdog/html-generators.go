@@ -391,7 +391,7 @@ hr:after {
           {{ with . }}
           <tr class="curr-harmony-node-{{ $shard }}-{{.IsHarmonyNode}}">
             <td>{{ .Address }}</td>
-            <td>{{ getShortBLSKey .BLSKey }}</td>
+            <td>{{ .BLSKey }}</td>
             <td>{{ .IsHarmonyNode }}</td>
             <td>{{ .VotingPower }}</td>
             <td>{{ .RawPercent }}</td>
@@ -449,7 +449,7 @@ hr:after {
            {{ with . }}
            <tr class="prev-harmony-node-{{ $shard }}-{{ .IsHarmonyNode }}">
              <td>{{ .Address }}</td>
-             <td>{{ getShortBLSKey .BLSKey }}</td>
+             <td>{{ .BLSKey }}</td>
              <td>{{ .IsHarmonyNode }}</td>
              <td>{{ .VotingPower }}</td>
              <td>{{ .RawPercent }}</td>
