@@ -6,8 +6,7 @@ built_by := ${USER}@harmony.one
 flags := -gcflags="all=-N -l -c 2"
 ldflags := -X main.version=v${version} -X main.commit=${commit}
 ldflags += -X main.builtAt=${built_at} -X main.builtBy=${built_by}
-watchdog := harmony-watchdogd
-watchdog_src := $(wildcard blockchain-watchdog/*.go)
+watchdog := watchdog
 
 env := GO111MODULE=on
 
@@ -15,11 +14,7 @@ all: watchdog
 	./$(watchdog) version
 
 watchdog:
-	@ $(env) go build -ldflags="$(ldflags)" \
--o $(watchdog) ${watchdog_src}
-
-iterate:all
-	./$(watchdog) monitor --watch ./monitor-testnet.yaml
+	@ $(env) go build -ldflags="$(ldflags)" ./...
 
 .PHONY:clean
 

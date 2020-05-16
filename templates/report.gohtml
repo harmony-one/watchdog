@@ -1,10 +1,3 @@
-package main
-
-import "fmt"
-
-func reportPage(chain string) string {
-	// Keep in mind that need extra % infront of % to escape fmt
-	return fmt.Sprintf(`
 <!DOCTYPE html>
 <html lang="en">
   <meta charset="utf-8"
@@ -26,7 +19,7 @@ func reportPage(chain string) string {
 body {font-family: "Open Sans", sans-serif;}
 .report-wrapper {padding:17px;padding-bottom:30px;background-color:#344E4F;}
 .report-wrapper > label {color: #AFCAC5;}
-.report-table {width:100%%; table-layout:fixed;word-break:break-all;}
+.report-table {width:100%; table-layout:fixed;word-break:break-all;}
 .report-descr {display:flex; justify-content:space-between; padding-bottom: 15px;}
 .flex-col {display:flex;flex-direction:column;}
 .flex-row {display:flex;justify-content:space-between;}
@@ -45,7 +38,7 @@ body {font-family: "Open Sans", sans-serif;}
   height:95px;
 }
 .align-right { text-align: right; }
-.space-between { justify-content:space-between; width: 100%% }
+.space-between { justify-content:space-between; width: 100% }
 .is-leader { background-color: #c4b8b178; }
 .center { align-items: center; }
 .stat-box { box-shadow: 0 2px 2px 0px rgba(0, 0, 0, 0.9); padding: 10px; background-color:#7F9A95;}
@@ -90,24 +83,25 @@ hr:after {
 .stat-box > p {
   display:flex;
   justify-content: space-between;
-  width: 100%%;
+  width: 100%;
 }
 {{ with (index .Summary "block-header") }}
 {{ range $key, $value := .}}
-#curr-hn-toggle-{{$key}}:checked ~ * .curr-harmony-node-{{$key}}-true {
+#curr-hn-toggle-{{ $key }}:checked ~ * .curr-harmony-node-{{ $key }}-true {
   display: table-row;
 }
-#curr-hn-toggle-{{$key}}:not(checked) ~ * .curr-harmony-node-{{$key}}-true {
+#curr-hn-toggle-{{ $key }}:not(checked) ~ * .curr-harmony-node-{{ $key }}-true {
   display: none;
 }
-#prev-hn-toggle-{{$key}}:checked ~ * .prev-harmony-node-{{$key}}-true {
+#prev-hn-toggle-{{ $key }}:checked ~ * .prev-harmony-node-{{ $key }}-true {
   display: table-row;
 }
-#prev-hn-toggle-{{$key}}:not(checked) ~ * .prev-harmony-node-{{$key}}-true {
+#prev-hn-toggle-{{ $key }}:not(checked) ~ * .prev-harmony-node-{{ $key }}-true {
   display: none;
 }
-{{end}}
-{{end}}
+{{ end }}
+{{ end }}
+{{ $chain = index .LeftTitle 0 }}
 </style>
   </head>
   <body>
@@ -116,13 +110,13 @@ hr:after {
         <div class="flex-row space-between">
           <div class="flex-col">
           {{ range .LeftTitle }}
-            <span class="build-stat-values">{{.}}</span>
-          {{end}}
+            <span class="build-stat-values">{{ . }}</span>
+          {{ end }}
           </div>
           <div class="flex-col">
           {{ range .RightTitle }}
-            <span class="build-stat-values align-right">{{.}}</span>
-          {{end}}
+            <span class="build-stat-values align-right">{{ . }}</span>
+          {{ end }}
           </div>
         </div>
       </div>
@@ -132,57 +126,57 @@ hr:after {
         {{ with (index .Summary "chain-config") }}
         {{ range $key, $value := . }}
           <div class="flex-col center stat-box">
-            <a href="#shard-{{$key}}">Shard-{{$key}}</a>
-            <p><span>Consensus:</span><span> {{index $value "consensus-status"}}</span></p>
-            <p><span>Chain ID:</span><span> {{index $value "chain-id"}}</span></p>
-            <p><span>Cross Link Epoch:</span><span>{{index $value "cross-link-epoch"}}</span></p>
-            <p><span>Cross Tx Epoch:</span><span>{{index $value "cross-tx-epoch"}}</span></p>
-            <p><span>Eip155 Epoch:</span><span>{{index $value "eip155-epoch"}}</span></p>
-            <p><span>S3 Epoch:</span><span>{{index $value "s3-epoch"}}</span></p>
-            <p><span>Pre-Staking Epoch:</span><span>{{index $value "pre-staking-epoch"}}</span></p>
-            <p><span>Staking Epoch:</span><span>{{index $value "staking-epoch"}}</span></p>
-            <p><span>Blocks Per Epoch:</span><span>{{index $value "blocks-per-epoch"}}</span></p>
-            <p><span>DNS Zone:</span><span>{{index $value "dns-zone"}}</span></p>
-            <p><span>Last Crosslink:</span><span>{{index (index (index $root.Summary "block-header") $key) "last-crosslink"}}</span></p>
+            <a href="#shard-{{$key}}">Shard-{{ $key }}</a>
+            <p><span>Consensus:</span><span> {{ index $value "consensus-status" }}</span></p>
+            <p><span>Chain ID:</span><span> {{ index $value "chain-id" }}</span></p>
+            <p><span>Cross Link Epoch:</span><span>{{ index $value "cross-link-epoch" }}</span></p>
+            <p><span>Cross Tx Epoch:</span><span>{{ index $value "cross-tx-epoch" }}</span></p>
+            <p><span>Eip155 Epoch:</span><span>{{ index $value "eip155-epoch" }}</span></p>
+            <p><span>S3 Epoch:</span><span>{{ index $value "s3-epoch" }}</span></p>
+            <p><span>Pre-Staking Epoch:</span><span>{{ index $value "pre-staking-epoch" }}</span></p>
+            <p><span>Staking Epoch:</span><span>{{ index $value "staking-epoch" }}</span></p>
+            <p><span>Blocks Per Epoch:</span><span>{{ index $value "blocks-per-epoch" }}</span></p>
+            <p><span>DNS Zone:</span><span>{{ index $value "dns-zone" }}</span></p>
+            <p><span>Last Crosslink:</span><span>{{ index (index (index $root.Summary "block-header") $key) "last-crosslink"}}</span></p>
             {{ if $root.SuperCommittee.CurrentCommittee.Deciders }}
                {{ $externCount := currentCommitteeCount $key }}
               <a href="#current-committee-{{$key}}"><span>{{ $externCount }}</span> Current Committee</a>
-            {{end}}
+            {{ end }}
             {{ if $root.SuperCommittee.PreviousCommittee.Deciders }}
                {{ $externCount := previousCommitteeCount $key }}
               <a href="#previous-committee-{{$key}}"><span>{{ $externCount }}</span> Previous Committee</a>
-            {{end}}
+            {{ end }}
           </div>
-        {{end}}
-        {{end}}
+        {{ end }}
+        {{ end }}
       </div>
       <div class="build-stat flex-both">
         {{ with (index .Summary "block-header") }}
-        {{range $key, $value := .}}
+        {{ range $key, $value := . }}
           <div class="flex-col center stat-box">
             <a href="#shard-{{$key}}">Shard-{{$key}}</a>
             <p><span>Node Count:</span><span>{{ len (index $value "records") }}</span></p>
-            <p><span>Max Block:</span><span>{{index $value "block-max"}}</span></p>
-            <p><span>Max Epoch:</span><span>{{index $value "epoch-max"}}</span></p>
-            <p><span>Leader:</span><span>{{index $value "shard-leader"}}</span></p>
+            <p><span>Max Block:</span><span>{{ index $value "block-max" }}</span></p>
+            <p><span>Max Epoch:</span><span>{{ index $value "epoch-max" }}</span></p>
+            <p><span>Leader:</span><span>{{ index $value "shard-leader" }}</span></p>
           </div>
-        {{end}}
-        {{end}}
+        {{ end }}
+        {{ end }}
       </div>
       <div class="build-stat flex-both">
         {{ with (index .Summary "node-metadata") }}
-        {{range $key, $value := .}}
+        {{ range $key, $value := . }}
           <div class="flex-col center stat-box">
-            <a href="#version-{{$key}}">{{$key}}</a>
+            <a href="#version-{{$key}}">{{ $key }}</a>
             <p>
               Node Count:{{ len (index $value "records") }}
               {{ with getCommitID $key }}
-                <a href="https://github.com/harmony-one/harmony/commit/{{.}}">commit</a>
-              {{end}}
+                <a href="https://github.com/harmony-one/harmony/commit/{{ . }}">commit</a>
+              {{ end }}
             <p>
           </div>
-        {{end}}
-        {{end}}
+        {{ end }}
+        {{ end }}
       </div>
     </header>
 
@@ -215,29 +209,29 @@ hr:after {
           </tr>
         </thead>
         <tbody>
-        {{range .NoReply}}
+        {{ range .NoReply }}
           <tr style="background-color:#F0B4B4;">
-            <td>{{.IP}}</td>
-            <td>{{.ShardID}}</td>
-            <td>{{.RPCPayload}}</td>
-            <td>{{.FailureReason}}</td>
+            <td>{{ .IP }}</td>
+            <td>{{ .ShardID }}</td>
+            <td>{{ .RPCPayload }}</td>
+            <td>{{ .FailureReason }}</td>
           </tr>
-        {{end}}
+        {{ end }}
         </tbody>
       </table>
     </section>
-    {{end}}
+    {{ end }}
 
     {{ with (index .Summary "block-header") }}
-    {{range $key, $value := .}}
-    <section class="report-wrapper" id="shard-{{$key}}">
+    {{ range $key, $value := . }}
+    <section class="report-wrapper" id="shard-{{ $key }}">
       <div class="summary-details">
         <div class="flex-col">
           <div class="flex-row">
             <h3>
               Block Header <span><a href="#top-of-page">(Top)</a></span>
             </h3>
-            <a href="/report-download-%s?report=%s&shard={{$key}}">Download CSV</a>
+            <a href="/report-download-{{ $chain }}?report=block-header&shard={{ $key }}">Download CSV</a>
           </div>
           <div class="flex-row">
             <p>Shard: {{ $key }}</p>
@@ -269,9 +263,9 @@ hr:after {
         </thead>
         <tbody>
           {{ with (index $value "records") }}
-          {{range .}}
+          {{ range . }}
           <tr>
-            <td>{{.IP}} </td>
+            <td>{{ .IP }} </td>
             <td>{{ .Payload.BlockHash }}</td>
             <td>{{ .Payload.Epoch }}</td>
             <td>{{ .Payload.BlockNumber }}</td>
@@ -281,24 +275,24 @@ hr:after {
             <td>{{ .Payload.LastCommitSig }}</td>
             <td>{{ .Payload.LastCommitBitmap }}</td>
           </tr>
-          {{end}}
-          {{end}}
+          {{ end }}
+          {{ end }}
         </tbody>
       </table>
     </section>
-    {{end}}
-    {{end}}
+    {{ end }}
+    {{ end }}
 
     {{ with (index .Summary "node-metadata") }}
     {{ range $key, $value := . }}
-    <section class="report-wrapper" id="version-{{$key}}">
+    <section class="report-wrapper" id="version-{{ $key }}">
       <div class="summary-details">
         <div class="flex-col">
           <div class="flex-row">
             <h3>
               Node Metadata <span><a href="#top-of-page">(Top)</a></span>
            </h3>
-            <a href="/report-download-%s?report=%s&vrs={{$key}}">Download CSV</a>
+            <a href="/report-download-{{ $chain }}?report=node-metadata&vrs={{ $key }}">Download CSV</a>
           </div>
           <div class="flex-row">
             <p>Build Version: {{ $key }}</p>
@@ -340,8 +334,8 @@ hr:after {
             <td>{{ calcConnectivity .Payload.P2PConnectivity.Connected .Payload.P2PConnectivity.TotalKnown }}</td>
             <td>{{ convertUnixTime .Payload.NodeStartTime }}</td>
           </tr>
-          {{end}}
-          {{end}}
+          {{ end }}
+          {{ end }}
         </tbody>
       </table>
     </section>
@@ -378,7 +372,7 @@ hr:after {
       <table class="sortable-theme-bootstrap report-table" data-sortable>
         <thead>
 	  <tr>
-            <th>Address</th>
+      <th>Address</th>
 	    <th>BLSKey</th>
 	    <th>Is Harmony Node</th>
 	    <th>Voting Power</th>
@@ -397,14 +391,14 @@ hr:after {
             <td>{{ .RawPercent }}</td>
             <td>{{ .EffectiveStake }}</td>
           </tr>
-          {{end}}
-          {{end}}
+          {{ end }}
+          {{ end }}
         </tbody>
       </table>
     </section>
-    {{end}}
-    {{end}}
-    {{end}}
+    {{ end }}
+    {{ end }}
+    {{ end }}
 
     {{ with .SuperCommittee }}
     {{ range $key, $value := .PreviousCommittee.Deciders }}
@@ -415,9 +409,9 @@ hr:after {
       <div class="summary-details">
          <div class="flex-col">
            <div class="flex-row">
-	     <h3>
-               Shard {{ $shard }} Previous Commitee <span><a href="#top-of-page">(Top)</a></span>
-             </h3>
+	            <h3>
+                Shard {{ $shard }} Previous Commitee <span><a href="#top-of-page">(Top)</a></span>
+              </h3>
            </div>
            {{ with $value }}
            <div class="flex-row">
@@ -455,14 +449,14 @@ hr:after {
              <td>{{ .RawPercent }}</td>
              <td>{{ .EffectiveStake }}</td>
            </tr>
-           {{end}}
-           {{end}}
+           {{ end }}
+           {{ end }}
          </tbody>
        </table>
      </section>
-     {{end}}
-     {{end}}
-     {{end}}
+     {{ end }}
+     {{ end }}
+     {{ end }}
 
     </main>
 <script>
@@ -470,5 +464,3 @@ setInterval(() => window.location.reload(true),  1000 * 120);
 </script>
   </body>
 </html>
-`, chain, blockHeaderReport, chain, nodeMetadataReport)
-}

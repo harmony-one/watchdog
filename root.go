@@ -264,7 +264,7 @@ func newInstructions(yamlPath string) (*instruction, error) {
 		defer f.Close()
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
-			ipList = append(ipList, scanner.Text()+":"+strconv.Itoa(t.Network.RPCPort))
+			ipList = append(ipList, scanner.Text())
 		}
 		err = scanner.Err()
 		if err != nil {

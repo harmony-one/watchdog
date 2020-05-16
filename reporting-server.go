@@ -16,13 +16,17 @@ import (
 
 	"github.com/ahmetb/go-linq"
 	"github.com/valyala/fasthttp"
+	"github.com/harmony-one/watchdog/internal/box"
 )
 
 const (
-	badVersionString   = "BAD_VERSION_STRING"
-	blockHeaderReport  = "block-header"
-	nodeMetadataReport = "node-metadata"
-	timeFormat         = "15:04:05 Jan _2 MST" // https://golang.org/pkg/time/#Time.Format
+	timeFormat     = "15:04:05 Jan _2 MST" // https://golang.org/pkg/time/#Time.Format
+	metaSumry      = "node-metadata"
+	headerSumry    = "block-header"
+	chainSumry     = "chain-config"
+	committeeSumry = "staking-committee"
+	blockMax       = "block-max"
+	timestamp      = "timestamp"
 )
 
 type any map[string]interface{}
@@ -34,20 +38,12 @@ var (
 	headerInformationCSVHeader = []string{"IP"}
 	post                       = []byte("POST")
 	client                     fasthttp.Client
+	report_template            *template.Template
 )
 
 func identity(x interface{}) interface{} {
 	return x
 }
-
-const (
-	metaSumry      = "node-metadata"
-	headerSumry    = "block-header"
-	chainSumry     = "chain-config"
-	committeeSumry = "staking-committee"
-	blockMax       = "block-max"
-	timestamp      = "timestamp"
-)
 
 func init() {
 	h := reflect.TypeOf((*BlockHeader)(nil)).Elem()
@@ -180,6 +176,15 @@ func request(node string, requestBody []byte) ([]byte, []byte, error) {
 	return result, nil, nil
 }
 
+type ReportData struct {
+	LeftTitle        []interface{}
+	RightTitle       []interface{}
+	Summary          interface{}
+	SuperCommittee   SuperCommitteeReply
+	NoReply          []noReply
+	DownMachineCount int
+}
+
 func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 	report := m.networkSnapshot()
 	if len(report.ConsensusProgress) != 0 {
@@ -189,70 +194,13 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	t, e := template.New("report").
-		//Adds to template a function to retrieve github commit id from version
-		Funcs(template.FuncMap{
-			"getCommitID": func(version string) string {
-				r := strings.Split(version, `-g`)
-				r = strings.Split(r[len(r)-1], " ")
-				return r[0]
-			},
-			"currentCommitteeCount": func(shardID string) string {
-				return strconv.Itoa(m.SuperCommittee.CurrentCommittee.Deciders["shard-"+shardID].Externals)
-			},
-			"previousCommitteeCount": func(shardID string) string {
-				return strconv.Itoa(m.SuperCommittee.PreviousCommittee.Deciders["shard-"+shardID].Externals)
-			},
-			"getShardID": func(s string) string {
-				return s[len(s)-1:]
-			},
-			"calcConnectivity": func(connected, known int) string {
-				if known != 0 {
-					return fmt.Sprintf("%d%%", int(float64(connected)/float64(known) * 100))
-				}
-				return "N/A"
-			},
-			"convertUnixTime": func(t int64) string {
-				return time.Unix(t, 0).UTC().Format(timeFormat)
-			},
-			"getShortBLSKey": func(keys []string) string {
-				displayStr := ""
-				if len(keys) == 0 {
-					displayStr = "No BLS keys"
-				}
-				count := len(keys)
-				for i, k := range keys {
-					if len(k) == 96 {  // Valid BLS keys are 96 characters long
-						displayStr = displayStr + k[:3] + "..." + k[len(k) - 3:]
-						if i != count {
-							displayStr = displayStr + ", "
-						}
-					} else {
-						count = count - 1
-					}
-				}
-				return displayStr
-			},
-		}).
-		Parse(reportPage(m.chain))
-	if e != nil {
-		fmt.Println(e)
-		http.Error(w, "could not generate page:"+e.Error(), http.StatusInternalServerError)
-		return
-	}
-	type v struct {
-		LeftTitle, RightTitle []interface{}
-		Summary               interface{}
-		SuperCommittee        SuperCommitteeReply
-		NoReply               []noReply
-		DownMachineCount      int
-	}
-	t.ExecuteTemplate(w, "report", v{
-		LeftTitle:      []interface{}{report.Chain},
-		RightTitle:     []interface{}{report.Build, time.Now().Format(time.RFC3339)},
-		Summary:        report.Summary,
-		SuperCommittee: m.SuperCommittee,
-		NoReply:        report.NoReplies,
+
+	report_template.ExecuteTemplate(w, "report", ReportData{
+		LeftTitle:        []interface{}{report.Chain},
+		RightTitle:       []interface{}{report.Build, time.Now().Format(timeFormat)},
+		Summary:          report.Summary,
+		SuperCommittee:   m.SuperCommittee,
+		NoReply:          report.NoReplies,
 		DownMachineCount: linq.From(report.NoReplies).Select(
 			func(c interface{}) interface{} { return c.(noReply).IP },
 		).Distinct().Count(),
@@ -269,8 +217,8 @@ func (m *monitor) produceCSV(w http.ResponseWriter, req *http.Request) {
 	switch keys, ok := req.URL.Query()["report"]; ok {
 	case true:
 		switch report := keys[0]; report {
-		case blockHeaderReport:
-			filename = blockHeaderReport + ".csv"
+		case headerSumry:
+			filename = headerSumry + ".csv"
 			records = append(records, headerInformationCSVHeader)
 
 			shard, ex := req.URL.Query()["shard"]
@@ -297,8 +245,8 @@ func (m *monitor) produceCSV(w http.ResponseWriter, req *http.Request) {
 				records = append(records, row)
 			}
 			m.inUse.Unlock()
-		case nodeMetadataReport:
-			filename = nodeMetadataReport + ".csv"
+		case metaSumry:
+			filename = metaSumry + ".csv"
 			records = append(records, nodeMetadataCSVHeader)
 
 			vrs, ex := req.URL.Query()["vrs"]
@@ -766,6 +714,55 @@ func (m *monitor) statusJSON(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(m.statusSnapshot())
 }
 
+func (m *monitor) parseTemplate(f string) *template.Template {
+	t := template.Must(template.New("").
+		Funcs(template.FuncMap{
+			"getCommitID": func(version string) string {
+				r := strings.Split(version, `-g`)
+				r = strings.Split(r[len(r)-1], " ")
+				return r[0]
+			},
+			"currentCommitteeCount": func(shardID string) string {
+				return strconv.Itoa(m.SuperCommittee.CurrentCommittee.Deciders["shard-"+shardID].Externals)
+			},
+			"previousCommitteeCount": func(shardID string) string {
+				return strconv.Itoa(m.SuperCommittee.PreviousCommittee.Deciders["shard-"+shardID].Externals)
+			},
+			"getShardID": func(s string) string {
+				return s[len(s)-1:]
+			},
+			"calcConnectivity": func(connected, known int) string {
+				if known != 0 {
+					return fmt.Sprintf("%d%%", int(float64(connected)/float64(known) * 100))
+				}
+				return "N/A"
+			},
+			"convertUnixTime": func(t int64) string {
+				return time.Unix(t, 0).UTC().Format(timeFormat)
+			},
+			"getShortBLSKey": func(keys []string) string {
+				displayStr := ""
+				if len(keys) == 0 {
+					displayStr = "No BLS keys"
+				}
+				count := len(keys)
+				for i, k := range keys {
+					if len(k) == 96 {  // Valid BLS keys are 96 characters long
+						displayStr = displayStr + k[:3] + "..." + k[len(k) - 3:]
+						if i != count {
+							displayStr = displayStr + ", "
+						}
+					} else {
+						count = count - 1
+					}
+				}
+				return displayStr
+			},
+		}).
+		Parse(f))
+	return t
+}
+
 func (m *monitor) startReportingHTTPServer(instrs *instruction) {
 	client = fasthttp.Client{
 		Dial: func(addr string) (net.Conn, error) {
@@ -773,6 +770,8 @@ func (m *monitor) startReportingHTTPServer(instrs *instruction) {
 		},
 		MaxConnsPerHost: 2048,
 	}
+	index := string(box.Get("/report.gohtml"))
+	report_template = m.parseTemplate(index)
 	go m.update(instrs.watchParams, instrs.superCommittee, []string{BlockHeaderRPC, NodeMetadataRPC})
 	http.HandleFunc("/report-"+instrs.Network.TargetChain, m.renderReport)
 	http.HandleFunc("/report-download-"+instrs.Network.TargetChain, m.produceCSV)
