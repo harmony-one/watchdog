@@ -3,7 +3,6 @@ package main
 import (
   "encoding/json"
   "fmt"
-  "strconv"
   "sync"
   "time"
 )
@@ -43,13 +42,10 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 
 	for range time.Tick(time.Duration(interval) * time.Second) {
     stdlog.Print("[cxMonitor] Starting cross shard transaction check")
-		queryID := 0
 		// Send requests to find potential shard leaders
 		for n := range shardMap {
-			nodeRequestFields["id"] = strconv.Itoa(queryID)
 			requestBody, _ := json.Marshal(nodeRequestFields)
 			jobs <- work{n, NodeMetadataRPC, requestBody}
-			queryID++
 			syncGroups[NodeMetadataRPC].Add(1)
 		}
 		syncGroups[NodeMetadataRPC].Wait()
@@ -69,13 +65,10 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 
 		// What do in case of no leader shown (skip cycle for shard)
 		// No reply also skip
-		queryID = 0
 		for _, node := range leaders {
 			for _, n := range node {
-				cxRequestFields["id"] = strconv.Itoa(queryID)
 				requestBody, _ := json.Marshal(cxRequestFields)
 				jobs <- work{n, PendingCXRPC, requestBody}
-				queryID++
 				syncGroups[PendingCXRPC].Add(1)
 			}
 		}

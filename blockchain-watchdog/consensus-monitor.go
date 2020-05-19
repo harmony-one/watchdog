@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -40,12 +39,9 @@ func (m *monitor) consensusMonitor(
 
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
 		stdlog.Print("[consensusMonitor] Starting consensus check")
-		queryID := 0
 		for n := range shardMap {
-			requestFields["id"] = strconv.Itoa(queryID)
 			requestBody, _ := json.Marshal(requestFields)
 			jobs <- work{n, BlockHeaderRPC, requestBody}
-			queryID++
 			syncGroups[BlockHeaderRPC].Add(1)
 		}
 		syncGroups[BlockHeaderRPC].Wait()
@@ -183,19 +179,17 @@ func checkSync(IP, pdServiceKey, chain string,
 	time.Sleep(time.Second * time.Duration(syncTimer))
 
 	requestFields := getRPCRequest(BlockHeaderRPC)
-	requestFields["id"] = strconv.Itoa(0)
 	requestBody, _ := json.Marshal(requestFields)
-	res := reply{address: IP, rpc: BlockHeaderRPC}
-	res.rpcResult, res.rpcPayload, res.oops = request("http://"+IP, requestBody)
+	result, _, err := request("http://"+IP, requestBody)
 
 	type r struct {
 		Result BlockHeaderReply `json:"result"`
 	}
 
 	// If invalid reply, no-op
-	if res.oops == nil {
+	if err == nil {
 		reply := r{}
-		json.Unmarshal(res.rpcResult, &reply)
+		json.Unmarshal(result, &reply)
 		if !(reply.Result.BlockNumber > blockNumber) {
 			message := fmt.Sprintf(blockHeightMessage,
 				IP, reply.Result.BlockNumber, shardHeight, reply.Result.ShardID, chain,

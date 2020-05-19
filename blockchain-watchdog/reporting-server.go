@@ -29,7 +29,6 @@ type any map[string]interface{}
 
 var (
 	buildVersion               = versionS()
-	queryID                    = 0
 	nodeMetadataCSVHeader      = []string{"IP"}
 	headerInformationCSVHeader = []string{"IP"}
 	post                       = []byte("POST")
@@ -470,12 +469,9 @@ func (m *monitor) manager(
 
 	prevEpoch := uint64(0)
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
-		queryID := 0
 		for n := range shardMap {
-			requestFields["id"] = strconv.Itoa(queryID)
 			requestBody, _ := json.Marshal(requestFields)
 			jobs <- work{n, rpc, requestBody}
-			queryID++
 			group.Add(1)
 		}
 		switch rpc {
