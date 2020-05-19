@@ -440,7 +440,7 @@ func (m *monitor) worker(
 }
 
 func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
-	stdlog.Print("[stakingCommitteeUpdate] Updating super committees...")
+	stdlog.Print("[stakingCommitteeUpdate] Updating super committees")
 	committeeRequestFields := getRPCRequest(SuperCommitteeRPC)
 
 	committeeRequestFields["id"] = "0"
@@ -452,13 +452,13 @@ func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
 	}
 
 	if oops != nil {
-		stdlog.Println("[stakingCommitteeUpdate] Unable to update Staking Committee")
+		stdlog.Printf("[stakingCommitteeUpdate] Unable to update super committees, Error: %v", oops)
 		return
 	}
 	committeeReply := s{}
 	json.Unmarshal(result, &committeeReply)
 	m.SuperCommittee = committeeReply.Result
-	stdlog.Println("[stakingCommitteeUpdate] Updated staking committee information")
+	stdlog.Print("[stakingCommitteeUpdate] Updated super committees")
 }
 
 func (m *monitor) manager(

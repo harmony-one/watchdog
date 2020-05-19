@@ -42,7 +42,7 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 	}
 
 	for range time.Tick(time.Duration(interval) * time.Second) {
-    stdlog.Print("[cxMonitor] Starting cross shard transaction check...")
+    stdlog.Print("[cxMonitor] Starting cross shard transaction check")
 		queryID := 0
 		// Send requests to find potential shard leaders
 		for n := range shardMap {
@@ -109,16 +109,14 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 					if err != nil {
 						errlog.Print(err)
 					} else {
-						stdlog.Print("[cxMonitor] Sent PagerDuty alert! %s", incidentKey)
+						stdlog.Printf("[cxMonitor] Sent PagerDuty alert: %s", incidentKey)
 					}
 				}
 			}
 		}
 
     for i, v := range cxPoolSize {
-      stdlog.Print(fmt.Sprintf("[cxMonitor] Shard: %d, " +
-        "Pending cross shard transaction pool size: %d", i, v),
-      )
+      stdlog.Printf("[cxMonitor] Shard: %d, Pending cross shard transaction pool size: %d", i, v)
     }
 
 		replyChannels[NodeMetadataRPC] = make(chan reply, len(shardMap))

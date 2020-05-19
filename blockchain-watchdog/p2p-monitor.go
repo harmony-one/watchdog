@@ -5,7 +5,7 @@ import (
 )
 
 func (m *monitor) p2pMonitor(tolerance int, pdServiceKey, chain string, data MetadataContainer) {
-	stdlog.Print("[p2pMonitor] Running p2p connectivity check...")
+	stdlog.Print("[p2pMonitor] Running p2p connectivity check")
 	percent := map[int][]int{}
 	for _, metadata := range data.Nodes {
 		shard := int(metadata.Payload.ShardID)

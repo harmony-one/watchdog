@@ -45,7 +45,7 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 
 	lastProcessed := make(map[int]processedCrossLink)
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
-		stdlog.Print("[crossLinkMonitor] Starting crosslink check...")
+		stdlog.Print("[crossLinkMonitor] Starting crosslink check")
 		queryID := 0
 		// Send requests to find potential shard 0 leaders
 		for k, v := range shardMap {
@@ -101,7 +101,7 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 								if err != nil {
 									errlog.Print(err)
 								} else {
-									stdlog.Print("[crossLinkMonitor] Sent PagerDuty alert! %s", incidentKey)
+									stdlog.Printf("[crossLinkMonitor] Sent PagerDuty alert! %s", incidentKey)
 								}
 							}
 							continue
@@ -117,7 +117,7 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 			}
 		}
 		for s, c := range lastProcessed {
-			stdlog.Print(fmt.Sprintf("[crossLinkMonitor] Shard: %d, Last Crosslink: %v", s, c))
+			stdlog.Printf("[crossLinkMonitor] Shard: %d, Last Crosslink: %v", s, c)
 		}
 		replyChannels[NodeMetadataRPC] = make(chan reply, len(shardMap))
 		replyChannels[LastCrossLinkRPC] = make(chan reply, len(shardMap))
