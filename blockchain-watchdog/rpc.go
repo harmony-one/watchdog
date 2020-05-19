@@ -7,6 +7,7 @@ const (
 	PendingCXRPC      = "hmy_getPendingCXReceipts"
 	SuperCommitteeRPC = "hmy_getSuperCommittees"
 	LastCrossLinkRPC  = "hmy_getLastCrossLinks"
+	LatestHeadersRPC  = "hmy_getLatestChainHeaders"
 	JSONVersion       = "2.0"
 )
 
@@ -103,10 +104,24 @@ type CrossLink struct {
 	EpochNumber     int    `json:"epoch-number"`
 }
 
+type HeaderPair struct {
+	Beacon   Header `json:"beacon-chain-header"`
+	AuxShard Header `json:"shard-chain-header"`
+}
+
+type Header struct {
+	Hash     string `json:"block-header-hash"`
+	Number   uint64 `json:"block-number"`
+	Epoch    uint64 `json:"epoch"`
+	ShardID  uint32 `json:"shard-id"`
+	ViewID   uint64 `json:"view-id"`
+}
+
 func getRPCRequest(rpc string) map[string]interface{} {
 	return map[string]interface{}{
 		"jsonrpc": JSONVersion,
 		"method":  rpc,
 		"params":  []interface{}{},
+		"id": "1",
 	}
 }

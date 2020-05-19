@@ -45,7 +45,7 @@ Signature Bitmap: %s
 Time since last processed cross link: %f seconds (%f minutes)
 `
 	blockHeightMessage = `
-%s at block height %d, which shard height %d.
+%s at block height %d, but shard height %d.
 
 Shard: %d
 
@@ -55,5 +55,12 @@ Chain: %s
 Shard: %s
 
 Avg Connectivity: %d
+`
+	beaconSyncMessage = `
+%s beacon at block height %d, but beacon height %d.
+
+Shard: %d
+
+Chain: %s
 `
 )

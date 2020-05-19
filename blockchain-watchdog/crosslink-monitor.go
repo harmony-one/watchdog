@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -45,15 +44,12 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 
 	lastProcessed := make(map[int]processedCrossLink)
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
-		stdlog.Print("[crossLinkMonitor] Starting crosslink check...")
-		queryID := 0
+		stdlog.Print("[crossLinkMonitor] Starting crosslink check")
 		// Send requests to find potential shard 0 leaders
 		for k, v := range shardMap {
 			if v == 0 {
-				nodeRequestFields["id"] = strconv.Itoa(queryID)
 				requestBody, _ := json.Marshal(nodeRequestFields)
 				jobs <- work{k, NodeMetadataRPC, requestBody}
-				queryID++
 				syncGroups[NodeMetadataRPC].Add(1)
 			}
 		}
@@ -71,13 +67,10 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 			}
 		}
 
-		queryID = 0
 		// Request from all potential leaders
 		for _, l := range leader {
-			crossLinkRequestFields["id"] = strconv.Itoa(queryID)
 			requestBody, _ := json.Marshal(crossLinkRequestFields)
 			jobs <- work{l, LastCrossLinkRPC, requestBody}
-			queryID++
 			syncGroups[LastCrossLinkRPC].Add(1)
 		}
 		syncGroups[LastCrossLinkRPC].Wait()
@@ -101,7 +94,7 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 								if err != nil {
 									errlog.Print(err)
 								} else {
-									stdlog.Print("[crossLinkMonitor] Sent PagerDuty alert! %s", incidentKey)
+									stdlog.Printf("[crossLinkMonitor] Sent PagerDuty alert! %s", incidentKey)
 								}
 							}
 							continue
@@ -117,7 +110,7 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 			}
 		}
 		for s, c := range lastProcessed {
-			stdlog.Print(fmt.Sprintf("[crossLinkMonitor] Shard: %d, Last Crosslink: %v", s, c))
+			stdlog.Printf("[crossLinkMonitor] Shard: %d, Last Crosslink: %v", s, c)
 		}
 		replyChannels[NodeMetadataRPC] = make(chan reply, len(shardMap))
 		replyChannels[LastCrossLinkRPC] = make(chan reply, len(shardMap))

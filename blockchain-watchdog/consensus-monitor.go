@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -39,13 +38,10 @@ func (m *monitor) consensusMonitor(
 	consensusStatus := make(map[string]bool)
 
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
-		stdlog.Print("[consensusMonitor] Starting consensus monitor check...")
-		queryID := 0
+		stdlog.Print("[consensusMonitor] Starting consensus check")
 		for n := range shardMap {
-			requestFields["id"] = strconv.Itoa(queryID)
 			requestBody, _ := json.Marshal(requestFields)
 			jobs <- work{n, BlockHeaderRPC, requestBody}
-			queryID++
 			syncGroups[BlockHeaderRPC].Add(1)
 		}
 		syncGroups[BlockHeaderRPC].Wait()
@@ -82,6 +78,9 @@ func (m *monitor) consensusMonitor(
 		for shard, summary := range blockHeaderData {
 			currentBlockHeight := summary.(any)[blockMax].(uint64)
 			currentBlockHeader := summary.(any)["latest-block"].(BlockHeader)
+			if shard == "0" {
+					go m.beaconSyncMonitor(currentBlockHeight, warning, tolerance, poolSize, pdServiceKey, chain, shardMap)
+			}
 			if lastBlock, exists := lastShardData[shard]; exists {
 				if currentBlockHeight <= lastBlock.Height {
 					timeSinceLastSuccess := currentUTCTime.Sub(lastBlock.TS)
@@ -105,7 +104,7 @@ func (m *monitor) consensusMonitor(
 						if err != nil {
 							errlog.Print(err)
 						} else {
-							stdlog.Print(fmt.Sprintf("[consensusMonitor] Sent PagerDuty alert! %s", incidentKey))
+							stdlog.Printf("[consensusMonitor] Sent PagerDuty alert! %s", incidentKey)
 						}
 						consensusStatus[shard] = false
 						continue
@@ -117,9 +116,9 @@ func (m *monitor) consensusMonitor(
 			}
 			consensusStatus[shard] = true
 		}
-		stdlog.Print(fmt.Sprintf("[consensusMonitor] Total no reply machines: %d", len(monitorData.Down)))
+		stdlog.Printf("[consensusMonitor] Total no reply machines: %d", len(monitorData.Down))
 	  for s, b := range consensusStatus {
-			stdlog.Print(fmt.Sprintf("[consensusMonitor] Shard %s, Consensus: %v", s, b))
+			stdlog.Printf("[consensusMonitor] Shard %s, Consensus: %v", s, b)
 		}
 
 		m.inUse.Lock()
@@ -132,7 +131,7 @@ func (m *monitor) consensusMonitor(
 func checkShardHeight(b BlockHeaderContainer, syncTimer, tolerance uint64,
 	pdServiceKey, chain string,
 ) {
-	stdlog.Print("[checkShardHeight] Running shard height check...")
+	stdlog.Print("[checkShardHeight] Running shard height check")
 	shardHeightMap := make(map[uint32](map[uint64][]BlockHeader))
 	for _, v := range b.Nodes {
 		shard := v.Payload.ShardID
@@ -165,10 +164,9 @@ func checkShardHeight(b BlockHeaderContainer, syncTimer, tolerance uint64,
 				}
 			}
 		}
-		stdlog.Print(
-			fmt.Sprintf("[checkShardHeight] Shard %d, Max height: %d," +
+		stdlog.Printf("[checkShardHeight] Shard %d, Max height: %d," +
 				" Number of unique heights: %d, Unique heights: %v",
-				 i, maxHeight, len(uniqueHeights), uniqueHeights),
+				 i, maxHeight, len(uniqueHeights), uniqueHeights,
 		)
 	}
 }
@@ -176,24 +174,22 @@ func checkShardHeight(b BlockHeaderContainer, syncTimer, tolerance uint64,
 func checkSync(IP, pdServiceKey, chain string,
 	blockNumber, shardHeight, syncTimer uint64,
 ) {
-	stdlog.Print(fmt.Sprintf("[checkSync] Sleeping %d to check IP %s progress", syncTimer, IP))
+	stdlog.Printf("[checkSync] Sleeping %d to check IP %s progress", syncTimer, IP)
 	// Check for progress after checking consensus time
 	time.Sleep(time.Second * time.Duration(syncTimer))
 
 	requestFields := getRPCRequest(BlockHeaderRPC)
-	requestFields["id"] = strconv.Itoa(0)
 	requestBody, _ := json.Marshal(requestFields)
-	res := reply{address: IP, rpc: BlockHeaderRPC}
-	res.rpcResult, res.rpcPayload, res.oops = request("http://"+IP, requestBody)
+	result, _, err := request("http://"+IP, requestBody)
 
 	type r struct {
 		Result BlockHeaderReply `json:"result"`
 	}
 
 	// If invalid reply, no-op
-	if res.oops == nil {
+	if err == nil {
 		reply := r{}
-		json.Unmarshal(res.rpcResult, &reply)
+		json.Unmarshal(result, &reply)
 		if !(reply.Result.BlockNumber > blockNumber) {
 			message := fmt.Sprintf(blockHeightMessage,
 				IP, reply.Result.BlockNumber, shardHeight, reply.Result.ShardID, chain,
@@ -203,11 +199,11 @@ func checkSync(IP, pdServiceKey, chain string,
 			if err != nil {
 				errlog.Print(err)
 			} else {
-				stdlog.Print(fmt.Sprintf("[checkSync] Sent PagerDuty alert! %s", incidentKey))
+				stdlog.Printf("[checkSync] Sent PagerDuty alert! %s", incidentKey)
 			}
-			stdlog.Print(fmt.Sprintf("[checkSync] IP %s is not syncing...", IP))
+			stdlog.Printf("[checkSync] IP %s is not syncing...", IP)
 		} else {
-			stdlog.Print(fmt.Sprintf("[checkSync] IP %s is syncing...", IP))
+			stdlog.Printf("[checkSync] IP %s is syncing...", IP)
 		}
 	}
 }

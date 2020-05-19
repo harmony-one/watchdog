@@ -3,7 +3,6 @@ package main
 import (
   "encoding/json"
   "fmt"
-  "strconv"
   "sync"
   "time"
 )
@@ -42,14 +41,11 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 	}
 
 	for range time.Tick(time.Duration(interval) * time.Second) {
-    stdlog.Print("[cxMonitor] Starting cross shard transaction check...")
-		queryID := 0
+    stdlog.Print("[cxMonitor] Starting cross shard transaction check")
 		// Send requests to find potential shard leaders
 		for n := range shardMap {
-			nodeRequestFields["id"] = strconv.Itoa(queryID)
 			requestBody, _ := json.Marshal(nodeRequestFields)
 			jobs <- work{n, NodeMetadataRPC, requestBody}
-			queryID++
 			syncGroups[NodeMetadataRPC].Add(1)
 		}
 		syncGroups[NodeMetadataRPC].Wait()
@@ -69,13 +65,10 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 
 		// What do in case of no leader shown (skip cycle for shard)
 		// No reply also skip
-		queryID = 0
 		for _, node := range leaders {
 			for _, n := range node {
-				cxRequestFields["id"] = strconv.Itoa(queryID)
 				requestBody, _ := json.Marshal(cxRequestFields)
 				jobs <- work{n, PendingCXRPC, requestBody}
-				queryID++
 				syncGroups[PendingCXRPC].Add(1)
 			}
 		}
@@ -109,16 +102,14 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 					if err != nil {
 						errlog.Print(err)
 					} else {
-						stdlog.Print("[cxMonitor] Sent PagerDuty alert! %s", incidentKey)
+						stdlog.Printf("[cxMonitor] Sent PagerDuty alert: %s", incidentKey)
 					}
 				}
 			}
 		}
 
     for i, v := range cxPoolSize {
-      stdlog.Print(fmt.Sprintf("[cxMonitor] Shard: %d, " +
-        "Pending cross shard transaction pool size: %d", i, v),
-      )
+      stdlog.Printf("[cxMonitor] Shard: %d, Pending cross shard transaction pool size: %d", i, v)
     }
 
 		replyChannels[NodeMetadataRPC] = make(chan reply, len(shardMap))

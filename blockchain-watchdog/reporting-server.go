@@ -29,7 +29,6 @@ type any map[string]interface{}
 
 var (
 	buildVersion               = versionS()
-	queryID                    = 0
 	nodeMetadataCSVHeader      = []string{"IP"}
 	headerInformationCSVHeader = []string{"IP"}
 	post                       = []byte("POST")
@@ -440,7 +439,7 @@ func (m *monitor) worker(
 }
 
 func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
-	stdlog.Print("[stakingCommitteeUpdate] Updating super committees...")
+	stdlog.Print("[stakingCommitteeUpdate] Updating super committees")
 	committeeRequestFields := getRPCRequest(SuperCommitteeRPC)
 
 	committeeRequestFields["id"] = "0"
@@ -452,13 +451,13 @@ func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
 	}
 
 	if oops != nil {
-		stdlog.Println("[stakingCommitteeUpdate] Unable to update Staking Committee")
+		stdlog.Printf("[stakingCommitteeUpdate] Unable to update super committees, Error: %v", oops)
 		return
 	}
 	committeeReply := s{}
 	json.Unmarshal(result, &committeeReply)
 	m.SuperCommittee = committeeReply.Result
-	stdlog.Println("[stakingCommitteeUpdate] Updated staking committee information")
+	stdlog.Print("[stakingCommitteeUpdate] Updated super committees")
 }
 
 func (m *monitor) manager(
@@ -470,12 +469,9 @@ func (m *monitor) manager(
 
 	prevEpoch := uint64(0)
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
-		queryID := 0
 		for n := range shardMap {
-			requestFields["id"] = strconv.Itoa(queryID)
 			requestBody, _ := json.Marshal(requestFields)
 			jobs <- work{n, rpc, requestBody}
-			queryID++
 			group.Add(1)
 		}
 		switch rpc {
