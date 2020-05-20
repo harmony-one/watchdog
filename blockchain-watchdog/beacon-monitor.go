@@ -113,9 +113,9 @@ func checkBeaconSync(blockNum, beaconHeight, syncTimer uint64, IP, pdServiceKey,
 		Result HeaderPair `json:"result"`
 	}
 
-	requestFields = getRPCRequest(LatestHeadersRPC)
-	requestBody, _ = json.Marshal(requestFields)
-	result, _, err = request("http://"+IP, requestBody)
+	requestFields := getRPCRequest(LatestHeadersRPC)
+	requestBody, _ := json.Marshal(requestFields)
+	result, _, err := request("http://"+IP, requestBody)
 	// If error, skip
 	if err != nil {
 		stdlog.Printf("[checkBeaconSync] Error getting Beacon header: %s", IP)
