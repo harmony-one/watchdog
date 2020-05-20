@@ -105,20 +105,6 @@ func checkBeaconSync(blockNum, beaconHeight, syncTimer uint64, IP, pdServiceKey,
 	type a struct {
 		Result NodeMetadataReply `json:"result"`
 	}
-	// TODO: Remove this check when RPC works properly on Explorer Nodes
-	requestFields := getRPCRequest(NodeMetadataRPC)
-	requestBody, _ := json.Marshal(requestFields)
-	result, _, err := request("http://"+IP, requestBody)
-	if err != nil {
-		stdlog.Printf("[checkBeaconSync] Error getting node type: %s", IP)
-		return
-	}
-	metadata := a{}
-	json.Unmarshal(result, &metadata)
-	if metadata.Result.NodeRole != "Validator" {
-		stdlog.Printf("[checkBeaconSync] %s is not Validator role, skipping...", IP)
-		return
-	}
 
 	stdlog.Printf("[checkBeaconSync] Sleeping %d to check IP %s beacon progress", syncTimer, IP)
 	time.Sleep(time.Second * time.Duration(syncTimer))
