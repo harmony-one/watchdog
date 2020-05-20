@@ -17,7 +17,7 @@ func (m *monitor) beaconSyncMonitor(
 	shardBeaconMap := map[int]map[uint64]bool{}
 	for ip, header := range currentBeaconHeaders {
 		if header != nil {
-			if header.Number-beaconBlock >= threshold {
+			if beaconBlock-header.Number >= threshold {
 				go checkBeaconSync(header.Number, beaconBlock, interval, ip, pdServiceKey, chain)
 			}
 			if _, exists := shardBeaconMap[shardMap[ip]]; !exists {
@@ -53,9 +53,11 @@ func getBeaconHeaders(poolSize int,
 	go func() {
 		defer close(requests)
 		requestFields := getRPCRequest(LatestHeadersRPC)
-		for n := range shardMap {
-			requestBody, _ := json.Marshal(requestFields)
-			requests <- work{n, LatestHeadersRPC, requestBody}
+		for n, s := range shardMap {
+			if s != 0 {
+				requestBody, _ := json.Marshal(requestFields)
+				requests <- work{n, LatestHeadersRPC, requestBody}
+			}
 		}
 	}()
 
