@@ -36,7 +36,9 @@ func (m *monitor) beaconSyncMonitor(
 			uniqueBlocks = append(uniqueBlocks, b)
 		}
 		if shard != 0 {
-			sorted = sort.SliceStable(uniqueBlocks)
+			sort.SliceStable(uniqueBlocks, func(i, j int) bool {
+				return uniqueBlocks[i] > uniqueBlocks[j]
+			})
 			stdlog.Printf("[beaconSyncMonitor] Shard %d, Beacon height: %d, Unique beacon heights: %v",
 				shard, beaconBlock, uniqueBlocks,
 			)
@@ -136,7 +138,6 @@ func checkBeaconSync(blockNum, beaconHeight, threshold, syncTimer uint64, IP, pd
 		} else {
 		 	stdlog.Printf("[checkBeaconSync] Sent PagerDuty alert! %s", incidentKey)
 		}
-		stdlog.Printf("[checkBeaconSync] Message: %s, Key: %s", message, incidentKey)
 		stdlog.Printf("[checkBeaconSync] %s beacon not syncing", IP)
 	} else {
 		stdlog.Printf("[checkBeaconSync] %s beacon sync", IP)
