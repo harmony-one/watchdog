@@ -18,7 +18,7 @@ func (m *monitor) beaconSyncMonitor(
 	for ip, header := range currentBeaconHeaders {
 		if header != nil {
 			if beaconBlock-header.Number >= threshold {
-				go checkBeaconSync(header.Number, beaconBlock, interval, ip, pdServiceKey, chain)
+				go checkBeaconSync(header.Number, beaconBlock, threshold, interval, ip, pdServiceKey, chain)
 			}
 			if _, exists := shardBeaconMap[shardMap[ip]]; !exists {
 				shardBeaconMap[shardMap[ip]] = map[uint64]bool{}
@@ -101,7 +101,7 @@ func getBeaconHeaders(poolSize int,
 	return ret
 }
 
-func checkBeaconSync(blockNum, beaconHeight, syncTimer uint64, IP, pdServiceKey, chain string) {
+func checkBeaconSync(blockNum, beaconHeight, threshold, syncTimer uint64, IP, pdServiceKey, chain string) {
 	type a struct {
 		Result NodeMetadataReply `json:"result"`
 	}
@@ -123,7 +123,7 @@ func checkBeaconSync(blockNum, beaconHeight, syncTimer uint64, IP, pdServiceKey,
 	}
 	headers := h{}
 	json.Unmarshal(result, &headers)
-	if !(headers.Result.Beacon.Number > blockNum) {
+	if !(headers.Result.Beacon.Number > blockNum) && (beaconHeight-headers.Result.Beacon.Number > threshold) {
 		message := fmt.Sprintf(beaconSyncMessage, IP, headers.Result.Beacon.Number,
 			beaconHeight, headers.Result.AuxShard.ShardID, chain,
 		)
