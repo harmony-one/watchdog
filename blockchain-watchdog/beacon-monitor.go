@@ -128,12 +128,13 @@ func checkBeaconSync(blockNum, beaconHeight, threshold, syncTimer uint64, IP, pd
 			beaconHeight, headers.Result.AuxShard.ShardID, chain,
 		)
 		incidentKey := fmt.Sprintf("%s beacon out of sync! - %s", IP, chain)
-		err := notify(pdServiceKey, incidentKey, chain, message)
-		if err != nil {
-			errlog.Print(err)
-		} else {
-			stdlog.Printf("[checkBeaconSync] Sent PagerDuty alert! %s", incidentKey)
-		}
+		// err := notify(pdServiceKey, incidentKey, chain, message)
+		// if err != nil {
+		//	errlog.Print(err)
+		// } else {
+		// 	stdlog.Printf("[checkBeaconSync] Sent PagerDuty alert! %s", incidentKey)
+		// }
+		stdlog.Printf("[checkBeaconSync] Message: %s, Key: %s", message, incidentKey)
 		stdlog.Printf("[checkBeaconSync] %s beacon not syncing", IP)
 	} else {
 		stdlog.Printf("[checkBeaconSync] %s beacon sync", IP)
