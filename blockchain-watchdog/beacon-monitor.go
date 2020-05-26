@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync/atomic"
 	"time"
 )
@@ -17,7 +18,7 @@ func (m *monitor) beaconSyncMonitor(
 	shardBeaconMap := map[int]map[uint64]bool{}
 	for ip, header := range currentBeaconHeaders {
 		if header != nil {
-			if beaconBlock-header.Number >= threshold {
+			if beaconBlock > header.Number && beaconBlock-header.Number >= threshold {
 				go checkBeaconSync(header.Number, beaconBlock, threshold, interval, ip, pdServiceKey, chain)
 			}
 			if _, exists := shardBeaconMap[shardMap[ip]]; !exists {
@@ -35,6 +36,7 @@ func (m *monitor) beaconSyncMonitor(
 			uniqueBlocks = append(uniqueBlocks, b)
 		}
 		if shard != 0 {
+			sorted = sort.SliceStable(uniqueBlocks)
 			stdlog.Printf("[beaconSyncMonitor] Shard %d, Beacon height: %d, Unique beacon heights: %v",
 				shard, beaconBlock, uniqueBlocks,
 			)
@@ -128,12 +130,12 @@ func checkBeaconSync(blockNum, beaconHeight, threshold, syncTimer uint64, IP, pd
 			beaconHeight, headers.Result.AuxShard.ShardID, chain,
 		)
 		incidentKey := fmt.Sprintf("%s beacon out of sync! - %s", IP, chain)
-		// err := notify(pdServiceKey, incidentKey, chain, message)
-		// if err != nil {
-		//	errlog.Print(err)
-		// } else {
-		// 	stdlog.Printf("[checkBeaconSync] Sent PagerDuty alert! %s", incidentKey)
-		// }
+		err := notify(pdServiceKey, incidentKey, chain, message)
+		if err != nil {
+			errlog.Print(err)
+		} else {
+		 	stdlog.Printf("[checkBeaconSync] Sent PagerDuty alert! %s", incidentKey)
+		}
 		stdlog.Printf("[checkBeaconSync] Message: %s, Key: %s", message, incidentKey)
 		stdlog.Printf("[checkBeaconSync] %s beacon not syncing", IP)
 	} else {
