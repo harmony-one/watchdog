@@ -22,6 +22,7 @@ type NodeMetadataReply struct {
 	DNSZone        string   `json:"dns-zone,omitempty"`
 	ArchivalNode   bool     `json:"is-archival,omitempty"`
 	NodeStartTime  int64    `json:"node-unix-start-time"`
+	PeerID         string   `json:"peerid"`
 	ChainConfig    struct {
 		ChainID         int `json:"chain-id"`
 		CrossLinkEpoch  int `json:"cross-link-epoch"`
@@ -110,11 +111,11 @@ type HeaderPair struct {
 }
 
 type Header struct {
-	Hash     string `json:"block-header-hash"`
-	Number   uint64 `json:"block-number"`
-	Epoch    uint64 `json:"epoch"`
-	ShardID  uint32 `json:"shard-id"`
-	ViewID   uint64 `json:"view-id"`
+	Hash    string `json:"block-header-hash"`
+	Number  uint64 `json:"block-number"`
+	Epoch   uint64 `json:"epoch"`
+	ShardID uint32 `json:"shard-id"`
+	ViewID  uint64 `json:"view-id"`
 }
 
 func getRPCRequest(rpc string) map[string]interface{} {
@@ -122,6 +123,6 @@ func getRPCRequest(rpc string) map[string]interface{} {
 		"jsonrpc": JSONVersion,
 		"method":  rpc,
 		"params":  []interface{}{},
-		"id": "1",
+		"id":      "1",
 	}
 }
