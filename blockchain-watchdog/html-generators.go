@@ -310,6 +310,7 @@ hr:after {
         <thead>
 	  <tr>
 	    <th>IP</th>
+	    <th>PeerID</th>
 	    <th>BLSKey</th>
 	    <th>Version</th>
 	    <th>Network Type</th>
@@ -328,6 +329,7 @@ hr:after {
           {{ range . }}
           <tr class="{{if .Payload.IsLeader}}is-leader{{end}}">
             <td>{{ .IP }}</td>
+            <td>{{ .Payload.PeerID }}</td>
             <td>{{ getShortBLSKey .Payload.BLSPublicKey }}</td>
             <td>{{ .Payload.Version }}</td>
             <td>{{ .Payload.NetworkType }}</td>

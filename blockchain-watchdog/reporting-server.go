@@ -207,7 +207,7 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 			},
 			"calcConnectivity": func(connected, known int) string {
 				if known != 0 {
-					return fmt.Sprintf("%d%%", int(float64(connected)/float64(known) * 100))
+					return fmt.Sprintf("%d%%", int(float64(connected)/float64(known)*100))
 				}
 				return "N/A"
 			},
@@ -221,8 +221,8 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 				}
 				count := len(keys)
 				for i, k := range keys {
-					if len(k) == 96 {  // Valid BLS keys are 96 characters long
-						displayStr = displayStr + k[:3] + "..." + k[len(k) - 3:]
+					if len(k) == 96 { // Valid BLS keys are 96 characters long
+						displayStr = displayStr + k[:3] + "..." + k[len(k)-3:]
 						if i != count {
 							displayStr = displayStr + ", "
 						}
@@ -327,6 +327,7 @@ func (m *monitor) produceCSV(w http.ResponseWriter, req *http.Request) {
 						strconv.FormatUint(uint64(v.(NodeMetadata).Payload.ShardID), 10),
 						v.(NodeMetadata).Payload.NodeRole,
 						strconv.FormatBool(v.(NodeMetadata).Payload.ArchivalNode),
+						v.(NodeMetadata).Payload.PeerID,
 					}
 					records = append(records, row)
 				}
