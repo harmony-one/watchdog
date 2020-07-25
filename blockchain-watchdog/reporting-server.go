@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,6 +34,7 @@ var (
 	headerInformationCSVHeader = []string{"IP"}
 	post                       = []byte("POST")
 	client                     fasthttp.Client
+	regexVersion               = regexp.MustCompile(`v\d+-v[\d.]+-\d+-g\w+(-dirty)?`)
 )
 
 func identity(x interface{}) interface{} {
@@ -108,6 +110,13 @@ func blockHeaderSummary(
 
 type summary map[string]map[string]interface{}
 
+// return a short version string, such as
+// v6150-v2.2.0-13-gbec0767b
+func shortVersion(version string) string {
+	shortV := regexVersion.FindString(version)
+	return shortV
+}
+
 // WARN Be careful, usage of interface{} can make things explode in the goroutine with bad cast
 func summaryMaps(metas []NodeMetadata, headers []BlockHeader) summary {
 	sum := summary{metaSumry: map[string]interface{}{},
@@ -123,7 +132,7 @@ func summaryMaps(metas []NodeMetadata, headers []BlockHeader) summary {
 	}
 
 	linq.From(metas).GroupBy(
-		func(node interface{}) interface{} { return node.(NodeMetadata).Payload.Version }, identity,
+		func(node interface{}) interface{} { return shortVersion(node.(NodeMetadata).Payload.Version) }, identity,
 	).ForEach(func(value interface{}) {
 		vrs := value.(linq.Group).Key.(string)
 		sum[metaSumry][vrs] = map[string]interface{}{"records": value.(linq.Group).Group}
@@ -232,6 +241,9 @@ func (m *monitor) renderReport(w http.ResponseWriter, req *http.Request) {
 				}
 				return displayStr
 			},
+			"getShortVersion": func(version string) string {
+				return shortVersion(version)
+			},
 		}).
 		Parse(reportPage(m.chain))
 	if e != nil {
@@ -317,10 +329,12 @@ func (m *monitor) produceCSV(w http.ResponseWriter, req *http.Request) {
 						}
 						blsKeys += k
 					}
+
+					shortV := shortVersion(v.(NodeMetadata).Payload.Version)
 					row := []string{
 						v.(NodeMetadata).IP,
 						blsKeys,
-						v.(NodeMetadata).Payload.Version,
+						shortV,
 						v.(NodeMetadata).Payload.NetworkType,
 						strconv.FormatUint(uint64(v.(NodeMetadata).Payload.ChainConfig.ChainID), 10),
 						strconv.FormatBool(v.(NodeMetadata).Payload.IsLeader),
