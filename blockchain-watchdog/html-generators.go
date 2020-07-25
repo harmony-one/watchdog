@@ -331,7 +331,7 @@ hr:after {
             <td>{{ .IP }}</td>
             <td>{{ .Payload.PeerID }}</td>
             <td>{{ getShortBLSKey .Payload.BLSPublicKey }}</td>
-            <td>{{ .Payload.Version }}</td>
+            <td>{{ getShortVersion .Payload.Version }}</td>
             <td>{{ .Payload.NetworkType }}</td>
             <td>{{ .Payload.ChainConfig.ChainID }}</td>
             <td>{{ .Payload.ShardID }}</td>
