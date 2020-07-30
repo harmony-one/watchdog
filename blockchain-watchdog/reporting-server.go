@@ -454,6 +454,7 @@ func (m *monitor) worker(
 }
 
 func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
+	time.Sleep(time.Second * time.Duration(5)) // Add delay to allow node to sync before update
 	stdlog.Print("[stakingCommitteeUpdate] Updating super committees")
 	committeeRequestFields := getRPCRequest(SuperCommitteeRPC)
 
