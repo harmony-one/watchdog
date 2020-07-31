@@ -445,11 +445,23 @@ func (m *monitor) worker(
 	jobs chan work, channels map[string](chan reply), groups map[string]*sync.WaitGroup,
 ) {
 	for j := range jobs {
+		if (j.rpc == BlockHeaderRPC) {
+			stdlog.Printf("[BlockHeaderRPC] Job started %v", j.address)
+		}
 		result := reply{address: j.address, rpc: j.rpc}
 		result.rpcResult, result.rpcPayload, result.oops = request(
 			"http://"+j.address, j.body)
+		if (j.rpc == BlockHeaderRPC) {
+			stdlog.Printf("[BlockHeaderRPC] Reply received %v", j.address)
+		}
 		channels[j.rpc] <- result
+		if (j.rpc == BlockHeaderRPC) {
+			stdlog.Printf("[BlockHeaderRPC] Data returned %v", j.address)
+		}
 		groups[j.rpc].Done()
+		if (j.rpc == BlockHeaderRPC) {
+			stdlog.Printf("[BlockHeaderRPC] Called done %v", j.address)
+		}
 	}
 }
 
