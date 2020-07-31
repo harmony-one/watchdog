@@ -46,6 +46,7 @@ func (m *monitor) consensusMonitor(
 		}
 		syncGroups[BlockHeaderRPC].Wait()
 		close(replyChannels[BlockHeaderRPC])
+		stdlog.Print("[consensusMonitor] All requests sent")
 
 		monitorData := BlockHeaderContainer{}
 		for d := range replyChannels[BlockHeaderRPC] {
@@ -75,6 +76,7 @@ func (m *monitor) consensusMonitor(
 
 		currentUTCTime := now.UTC()
 
+		stdlog.Println("[consensusMonitor] Processing data")
 		for shard, summary := range blockHeaderData {
 			currentBlockHeight := summary.(any)[blockMax].(uint64)
 			currentBlockHeader := summary.(any)["latest-block"].(BlockHeader)
@@ -117,10 +119,11 @@ func (m *monitor) consensusMonitor(
 			consensusStatus[shard] = true
 		}
 		stdlog.Printf("[consensusMonitor] Total no reply machines: %d", len(monitorData.Down))
-	  for s, b := range consensusStatus {
+	  	for s, b := range consensusStatus {
 			stdlog.Printf("[consensusMonitor] Shard %s, Consensus: %v", s, b)
 		}
 
+		stdlog.Print()
 		m.inUse.Lock()
 		m.consensusProgress = consensusStatus
 		m.inUse.Unlock()
