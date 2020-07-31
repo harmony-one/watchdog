@@ -39,11 +39,13 @@ func (m *monitor) consensusMonitor(
 
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
 		stdlog.Print("[consensusMonitor] Starting consensus check")
+		stdlog.Printf("[consensusMonitor] %v", shardMap)
 		for n := range shardMap {
 			requestBody, _ := json.Marshal(requestFields)
 			jobs <- work{n, BlockHeaderRPC, requestBody}
 			syncGroups[BlockHeaderRPC].Add(1)
 		}
+		stdlog.Print("[consensusMonitor] Waiting for SyncGroup")
 		syncGroups[BlockHeaderRPC].Wait()
 		close(replyChannels[BlockHeaderRPC])
 		stdlog.Print("[consensusMonitor] All requests sent")
