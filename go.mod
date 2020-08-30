@@ -11,5 +11,6 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/takama/daemon v0.11.0
 	github.com/valyala/fasthttp v1.16.0
+	github.com/yanzay/tbot/v2 v2.2.0 // indirect
 	gopkg.in/yaml.v2 v2.2.7
 )

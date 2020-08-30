@@ -1,15 +1,19 @@
 package main
 
 import (
-  "encoding/json"
-  "fmt"
-  "sync"
-  "time"
+	"encoding/json"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/yanzay/tbot/v2"
 )
 
-func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
-  pdServiceKey, chain string, shardMap map[string]int,
-) {
+func (m *monitor) cxMonitor(params watchParams, shardMap map[string]int, tgclient tbot.Client) {
+	interval := uint64(params.InspectSchedule.CxPending)
+	limit := uint64(params.ShardHealthReporting.CxPending.Warning)
+	poolSize := int(params.Performance.WorkerPoolSize)
+	chain := string(params.Network.TargetChain)
 	cxRequestFields := getRPCRequest(PendingCXRPC)
 	nodeRequestFields := getRPCRequest(NodeMetadataRPC)
 
@@ -41,7 +45,7 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 	}
 
 	for range time.Tick(time.Duration(interval) * time.Second) {
-    stdlog.Print("[cxMonitor] Starting cross shard transaction check")
+		stdlog.Print("[cxMonitor] Starting cross shard transaction check")
 		// Send requests to find potential shard leaders
 		for n := range shardMap {
 			requestBody, _ := json.Marshal(nodeRequestFields)
@@ -92,25 +96,31 @@ func (m *monitor) cxMonitor(interval, limit uint64, poolSize int,
 				cxPoolSize[shard] = append(cxPoolSize[shard], report.Result)
 				if report.Result > limit {
 					message := fmt.Sprintf(crossShardTransactionMessage,
-            shard, report.Result,
-          )
+						shard, report.Result,
+					)
 					incidentKey := fmt.Sprintf(
-            "Shard %d cx pool size greater than pending limit! - %s",
-            shard, chain,
-          )
-					err := notify(pdServiceKey, incidentKey, chain, message)
+						"Shard %d cx pool size greater than pending limit! - %s",
+						shard, chain,
+					)
+					errtg := notifytg(tgclient, params.Auth.Telegram.ChatID, incidentKey+"\n"+message)
+					err := notify(params.Auth.PagerDuty.EventServiceKey, incidentKey, chain, message)
 					if err != nil {
 						errlog.Print(err)
 					} else {
 						stdlog.Printf("[cxMonitor] Sent PagerDuty alert: %s", incidentKey)
 					}
+					if errtg != nil {
+						errlog.Print(errtg)
+					} else {
+						stdlog.Printf("[cxMonitor] Sent TG alert! %s", incidentKey)
+					}
 				}
 			}
 		}
 
-    for i, v := range cxPoolSize {
-      stdlog.Printf("[cxMonitor] Shard: %d, Pending cross shard transaction pool size: %d", i, v)
-    }
+		for i, v := range cxPoolSize {
+			stdlog.Printf("[cxMonitor] Shard: %d, Pending cross shard transaction pool size: %d", i, v)
+		}
 
 		replyChannels[NodeMetadataRPC] = make(chan reply, len(shardMap))
 		replyChannels[PendingCXRPC] = make(chan reply, len(shardMap))

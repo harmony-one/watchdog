@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/yanzay/tbot/v2"
 )
 
-func (m *monitor) consensusMonitor(
-	interval, warning, tolerance uint64, poolSize int,
-	pdServiceKey, chain string, shardMap map[string]int,
-) {
+func (m *monitor) consensusMonitor(params watchParams, shardMap map[string]int, tgclient tbot.Client) {
+	interval := uint64(params.ShardHealthReporting.Consensus.Interval)
+	warning := uint64(params.ShardHealthReporting.Consensus.Warning)
+	poolSize := int(params.Performance.WorkerPoolSize)
+	chain := string(params.Network.TargetChain)
 	jobs := make(chan work, len(shardMap))
 	replyChannels := make(map[string](chan reply))
 	syncGroups := make(map[string]*sync.WaitGroup)
@@ -68,7 +71,7 @@ func (m *monitor) consensusMonitor(
 		containerCopy := BlockHeaderContainer{}
 		containerCopy.Nodes = append([]BlockHeader{}, monitorData.Nodes...)
 
-		go checkShardHeight(containerCopy, warning, tolerance, pdServiceKey, chain)
+		go checkShardHeight(containerCopy, params, tgclient)
 
 		blockHeaderData := any{}
 		blockHeaderSummary(monitorData.Nodes, true, blockHeaderData)
@@ -79,7 +82,7 @@ func (m *monitor) consensusMonitor(
 			currentBlockHeight := summary.(any)[blockMax].(uint64)
 			currentBlockHeader := summary.(any)["latest-block"].(BlockHeader)
 			if shard == "0" {
-					go m.beaconSyncMonitor(currentBlockHeight, warning, tolerance, poolSize, pdServiceKey, chain, shardMap)
+				go m.beaconSyncMonitor(currentBlockHeight, params, shardMap, tgclient)
 			}
 			if lastBlock, exists := lastShardData[shard]; exists {
 				if currentBlockHeight <= lastBlock.Height {
@@ -100,11 +103,17 @@ func (m *monitor) consensusMonitor(
 						incidentKey := fmt.Sprintf("Shard %s consensus stuck! - %s",
 							shard, chain,
 						)
-						err := notify(pdServiceKey, incidentKey, chain, message)
+						errtg := notifytg(tgclient, params.Auth.Telegram.ChatID, incidentKey+"\n"+message)
+						err := notify(params.Auth.PagerDuty.EventServiceKey, incidentKey, chain, message)
 						if err != nil {
 							errlog.Print(err)
 						} else {
-							stdlog.Printf("[consensusMonitor] Sent PagerDuty alert! %s", incidentKey)
+							stdlog.Printf("[consensusMonitor] Sent TG/PagerDuty alert! %s", incidentKey)
+						}
+						if errtg != nil {
+							errlog.Print(errtg)
+						} else {
+							stdlog.Printf("[consensusMonitor] Sent TG alert! %s", incidentKey)
 						}
 						consensusStatus[shard] = false
 						continue
@@ -117,7 +126,7 @@ func (m *monitor) consensusMonitor(
 			consensusStatus[shard] = true
 		}
 		stdlog.Printf("[consensusMonitor] Total no reply machines: %d", len(monitorData.Down))
-	  for s, b := range consensusStatus {
+		for s, b := range consensusStatus {
 			stdlog.Printf("[consensusMonitor] Shard %s, Consensus: %v", s, b)
 		}
 
@@ -128,14 +137,13 @@ func (m *monitor) consensusMonitor(
 	}
 }
 
-func checkShardHeight(b BlockHeaderContainer, syncTimer, tolerance uint64,
-	pdServiceKey, chain string,
-) {
+func checkShardHeight(b BlockHeaderContainer, params watchParams, tgclient tbot.Client) {
 	stdlog.Print("[checkShardHeight] Running shard height check")
+	tolerance := uint64(params.ShardHealthReporting.ShardHeight.Warning)
 	shardHeightMap := make(map[uint32](map[uint64][]BlockHeader))
 	for _, v := range b.Nodes {
 		shard := v.Payload.ShardID
-		block :=  v.Payload.BlockNumber
+		block := v.Payload.BlockNumber
 		if shardHeightMap[shard] == nil {
 			shardHeightMap[shard] = make(map[uint64][]BlockHeader)
 		}
@@ -157,23 +165,26 @@ func checkShardHeight(b BlockHeaderContainer, syncTimer, tolerance uint64,
 			}
 		}
 		for _, h := range uniqueHeights {
-			if maxHeight - uint64(h) > tolerance {
+			if maxHeight-uint64(h) > tolerance {
 				for _, v := range shardHeightMap[i][uint64(h)] {
-					go checkSync(v.IP, pdServiceKey, chain,
-						v.Payload.BlockNumber, maxHeight, syncTimer)
+					go checkSync(v.IP, params, v.Payload.BlockNumber,
+						maxHeight, tgclient)
 				}
 			}
 		}
-		stdlog.Printf("[checkShardHeight] Shard %d, Max height: %d," +
-				" Number of unique heights: %d, Unique heights: %v",
-				 i, maxHeight, len(uniqueHeights), uniqueHeights,
+		stdlog.Printf("[checkShardHeight] Shard %d, Max height: %d,"+
+			" Number of unique heights: %d, Unique heights: %v",
+			i, maxHeight, len(uniqueHeights), uniqueHeights,
 		)
 	}
 }
 
-func checkSync(IP, pdServiceKey, chain string,
-	blockNumber, shardHeight, syncTimer uint64,
+func checkSync(IP string, params watchParams,
+	blockNumber, shardHeight uint64, tgclient tbot.Client,
 ) {
+	syncTimer := uint64(params.ShardHealthReporting.Consensus.Warning)
+	chain := string(params.Network.TargetChain)
+
 	stdlog.Printf("[checkSync] Sleeping %d to check IP %s progress", syncTimer, IP)
 	// Check for progress after checking consensus time
 	time.Sleep(time.Second * time.Duration(syncTimer))
@@ -195,11 +206,17 @@ func checkSync(IP, pdServiceKey, chain string,
 				IP, reply.Result.BlockNumber, shardHeight, reply.Result.ShardID, chain,
 			)
 			incidentKey := fmt.Sprintf("%s out of sync! - %s", IP, chain)
-			err := notify(pdServiceKey, incidentKey, chain, message)
+			errtg := notifytg(tgclient, params.Auth.Telegram.ChatID, incidentKey+"\n"+message)
+			err := notify(params.Auth.PagerDuty.EventServiceKey, incidentKey, chain, message)
 			if err != nil {
 				errlog.Print(err)
 			} else {
-				stdlog.Printf("[checkSync] Sent PagerDuty alert! %s", incidentKey)
+				stdlog.Printf("[checkSync] Sent TG/PagerDuty alert! %s", incidentKey)
+			}
+			if errtg != nil {
+				errlog.Print(errtg)
+			} else {
+				stdlog.Printf("[checkSync] Sent TG alert! %s", incidentKey)
 			}
 			stdlog.Printf("[checkSync] IP %s is not syncing...", IP)
 		} else {

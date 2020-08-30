@@ -3,12 +3,37 @@ Harmony Watchdog
 
 Originally from: [harmony-one/harmony-ops](https://github.com/harmony-one/harmony-ops/pull/524)
 
+## How to use
+Print a sample configuration file
+```bash
+./harmony-watchd generate-sample
+```
+
+Checks if the IPs listed in the shards are listed in the correct file, according to the reply from the machine. 
+Prints errors in JSON format to console.
+```bash
+./harmony-watchd validate-ip-in-shard
+```
+
+Install or remove the daemon from systemd services. (Will require sudo permissions)
+```bash
+./harmony-watchd service [install] [remove]
+```
+
+Starts the monitoring process. Currently does basic sanity checks to validate the config file. 
+Also, will return an error if an IP is duplicated in the node-distribution lists.
+```bash
+./harmony-watchd monitor --yaml-config [config file]
+```
 ## Example YAML file
 ```yaml
 # Place all needed authorization keys here
 auth:
   pagerduty:
     event-service-key: YOUR_PAGERDUTY_KEY
+  telegram:
+    bot-token: YOUR_TELEGRAM_KEY
+    chat-id: YOUR_CHATID
 
 network-config:
   target-chain: testnet
