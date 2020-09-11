@@ -792,4 +792,12 @@ func (m *monitor) startReportingHTTPServer(instrs *instruction) {
 	http.HandleFunc("/network-"+instrs.Network.TargetChain, m.networkSnapshotJSON)
 	http.HandleFunc("/status-"+instrs.Network.TargetChain, m.statusJSON)
 	http.ListenAndServe(":"+strconv.Itoa(instrs.HTTPReporter.Port), nil)
+
+	defaultConsensusStatus := make(map[string]bool)
+	for s, _ := range instrs.superCommittee {
+		defaultConsensusStatus[string(s)] = true
+	}
+	m.inUse.Lock()
+	m.consensusProgress = defaultConsensusStatus
+	m.inUse.Unlock()
 }

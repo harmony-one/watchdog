@@ -79,7 +79,7 @@ func (m *monitor) consensusMonitor(
 			currentBlockHeight := summary.(any)[blockMax].(uint64)
 			currentBlockHeader := summary.(any)["latest-block"].(BlockHeader)
 			if shard == "0" {
-					go m.beaconSyncMonitor(currentBlockHeight, warning, tolerance, poolSize, pdServiceKey, chain, shardMap)
+				go m.beaconSyncMonitor(currentBlockHeight, warning, tolerance, poolSize, pdServiceKey, chain, shardMap)
 			}
 			if lastBlock, exists := lastShardData[shard]; exists {
 				if currentBlockHeight <= lastBlock.Height {
@@ -98,8 +98,7 @@ func (m *monitor) consensusMonitor(
 							timeSinceLastSuccess.Minutes(), chain,
 						)
 						incidentKey := fmt.Sprintf("Shard %s consensus stuck! - %s",
-							shard, chain,
-						)
+							shard, chain)
 						err := notify(pdServiceKey, incidentKey, chain, message)
 						if err != nil {
 							errlog.Print(err)
@@ -117,7 +116,7 @@ func (m *monitor) consensusMonitor(
 			consensusStatus[shard] = true
 		}
 		stdlog.Printf("[consensusMonitor] Total no reply machines: %d", len(monitorData.Down))
-	  for s, b := range consensusStatus {
+	  	for s, b := range consensusStatus {
 			stdlog.Printf("[consensusMonitor] Shard %s, Consensus: %v", s, b)
 		}
 
