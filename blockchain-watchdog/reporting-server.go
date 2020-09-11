@@ -779,6 +779,13 @@ func (m *monitor) statusJSON(w http.ResponseWriter, req *http.Request) {
 }
 
 func (m *monitor) startReportingHTTPServer(instrs *instruction) {
+	defaultConsensusStatus := make(map[string]bool)
+	for s, _ := range instrs.superCommittee {
+		defaultConsensusStatus[string(s)] = true
+	}
+	m.inUse.Lock()
+	m.consensusProgress = defaultConsensusStatus
+	m.inUse.Unlock()
 	client = fasthttp.Client{
 		Dial: func(addr string) (net.Conn, error) {
 			return fasthttp.DialTimeout(addr, time.Second*time.Duration(instrs.Performance.HTTPTimeout))
@@ -792,12 +799,4 @@ func (m *monitor) startReportingHTTPServer(instrs *instruction) {
 	http.HandleFunc("/network-"+instrs.Network.TargetChain, m.networkSnapshotJSON)
 	http.HandleFunc("/status-"+instrs.Network.TargetChain, m.statusJSON)
 	http.ListenAndServe(":"+strconv.Itoa(instrs.HTTPReporter.Port), nil)
-
-	defaultConsensusStatus := make(map[string]bool)
-	for s, _ := range instrs.superCommittee {
-		defaultConsensusStatus[string(s)] = true
-	}
-	m.inUse.Lock()
-	m.consensusProgress = defaultConsensusStatus
-	m.inUse.Unlock()
 }
