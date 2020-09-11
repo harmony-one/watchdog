@@ -81,6 +81,7 @@ func (m *monitor) consensusMonitor(
 			if shard == "0" {
 				go m.beaconSyncMonitor(currentBlockHeight, warning, tolerance, poolSize, pdServiceKey, chain, shardMap)
 			}
+			fmt.Println(lastShardData)
 			if lastBlock, exists := lastShardData[shard]; exists {
 				if currentBlockHeight <= lastBlock.Height {
 					timeSinceLastSuccess := currentUTCTime.Sub(lastBlock.TS)
