@@ -37,6 +37,14 @@ type NodeMetadataReply struct {
 		NotConnected int `json:"not-connected"`
 		TotalKnown   int `json:"total-known-peers"`
 	} `json:"p2p-connectivity"`
+	ConsensusInternal struct {
+		ViewID        uint64 `json:"viewId"`
+		VCID          uint64 `json:"viewChangeId"`
+		Mode          string `json:"mode"`
+		Phase         string `json:"phase"`
+		BlockNum      uint64 `json:"blocknum"`
+		ConsensusTime int64  `json:"finality"`
+	} `json:"consensus"`
 }
 
 type NodeMetadata struct {

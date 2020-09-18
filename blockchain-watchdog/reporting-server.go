@@ -342,6 +342,12 @@ func (m *monitor) produceCSV(w http.ResponseWriter, req *http.Request) {
 						v.(NodeMetadata).Payload.NodeRole,
 						strconv.FormatBool(v.(NodeMetadata).Payload.ArchivalNode),
 						v.(NodeMetadata).Payload.PeerID,
+						v.(NodeMetadata).Payload.ConsensusInternal.Mode,
+						v.(NodeMetadata).Payload.ConsensusInternal.Phase,
+						strconv.FormatUint(v.(NodeMetadata).Payload.ConsensusInternal.ViewID, 10),
+						strconv.FormatUint(v.(NodeMetadata).Payload.ConsensusInternal.VCID, 10),
+						strconv.FormatUint(v.(NodeMetadata).Payload.ConsensusInternal.BlockNum, 10),
+						strconv.FormatInt(v.(NodeMetadata).Payload.ConsensusInternal.ConsensusTime, 10),
 					}
 					records = append(records, row)
 				}
@@ -784,7 +790,7 @@ func (m *monitor) startReportingHTTPServer(instrs *instruction) {
 			return fasthttp.DialTimeout(addr, time.Second*time.Duration(instrs.Performance.HTTPTimeout))
 		},
 		MaxConnsPerHost: 2048,
-		ReadTimeout: time.Second * time.Duration(1),
+		ReadTimeout:     time.Second * time.Duration(1),
 	}
 	go m.update(instrs.watchParams, instrs.superCommittee, []string{BlockHeaderRPC, NodeMetadataRPC})
 	http.HandleFunc("/report-"+instrs.Network.TargetChain, m.renderReport)
