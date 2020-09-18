@@ -10,6 +10,6 @@ require (
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/takama/daemon v0.11.0
-	github.com/valyala/fasthttp v1.2.0
+	github.com/valyala/fasthttp v1.16.0
 	gopkg.in/yaml.v2 v2.2.7
 )

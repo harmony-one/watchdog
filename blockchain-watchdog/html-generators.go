@@ -313,15 +313,21 @@ hr:after {
 	    <th>PeerID</th>
 	    <th>BLSKey</th>
 	    <th>Version</th>
-	    <th>Network Type</th>
+	    <th>Network</th>
 	    <th>ChainID</th>
 	    <th>ShardID</th>
 	    <th>Role</th>
 	    <th>Archival</th>
-	    <th>Connected Peers</th>
-	    <th>Total Peers</th>
+	    <th>Connected</th>
+	    <th>Total</th>
 	    <th>Connectivity</th>
-	    <th>Start Time</th>
+	    <th>Start</th>
+	    <th>Mode</th>
+	    <th>Phase</th>
+	    <th>viewID</th>
+	    <th>vcID</th>
+	    <th>BN</th>
+	    <th>Finality (ms)</th>
 	  </tr>
         </thead>
         <tbody>
@@ -341,6 +347,12 @@ hr:after {
             <td>{{ .Payload.P2PConnectivity.TotalKnown }}</td>
             <td>{{ calcConnectivity .Payload.P2PConnectivity.Connected .Payload.P2PConnectivity.TotalKnown }}</td>
             <td>{{ convertUnixTime .Payload.NodeStartTime }}</td>
+            <td>{{ .Payload.ConsensusInternal.Mode }}</td>
+            <td>{{ .Payload.ConsensusInternal.Phase }}</td>
+            <td>{{ .Payload.ConsensusInternal.ViewID }}</td>
+            <td>{{ .Payload.ConsensusInternal.VCID }}</td>
+            <td>{{ .Payload.ConsensusInternal.BlockNum }}</td>
+            <td>{{ .Payload.ConsensusInternal.ConsensusTime }}</td>
           </tr>
           {{end}}
           {{end}}
