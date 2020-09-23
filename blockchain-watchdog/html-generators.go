@@ -259,12 +259,12 @@ hr:after {
 	    <th>IP</th>
 	    <th>Block Hash</th>
 	    <th>Epoch</th>
-	    <th>Block Number</th>
+	    <th>Block<br>Number</th>
 	    <th>Leader</th>
 	    <th>ViewID</th>
 	    <th>Timestamp</th>
-	    <th>Last Commit Sig</th>
-	    <th>Last Commit Bitmap</th>
+	    <th>Last<br>Commit<br>Signature</th>
+	    <th>Last<br>Commit<br>Bitmap</th>
 	  </tr>
         </thead>
         <tbody>
@@ -312,22 +312,19 @@ hr:after {
 	    <th>IP</th>
 	    <th>PeerID</th>
 	    <th>BLSKey</th>
-	    <th>Version</th>
-	    <th>Network</th>
 	    <th>ChainID</th>
 	    <th>ShardID</th>
 	    <th>Role</th>
 	    <th>Archival</th>
-	    <th>Connected</th>
-	    <th>Total</th>
+	    <th>Total<br>Peers</th>
 	    <th>Connectivity</th>
 	    <th>Start</th>
 	    <th>Mode</th>
 	    <th>Phase</th>
-	    <th>viewID</th>
-	    <th>vcID</th>
-	    <th>BN</th>
-	    <th>Finality (ms)</th>
+	    <th>Block<br>ViewID</th>
+	    <th>ViewChange<br>ID</th>
+	    <th>Block<br>Number</th>
+	    <th>Finality<br>(ms)</th>
 	  </tr>
         </thead>
         <tbody>
@@ -337,13 +334,10 @@ hr:after {
             <td>{{ .IP }}</td>
             <td>{{ .Payload.PeerID }}</td>
             <td>{{ getShortBLSKey .Payload.BLSPublicKey }}</td>
-            <td>{{ getShortVersion .Payload.Version }}</td>
-            <td>{{ .Payload.NetworkType }}</td>
             <td>{{ .Payload.ChainConfig.ChainID }}</td>
             <td>{{ .Payload.ShardID }}</td>
             <td>{{ .Payload.NodeRole }}</td>
             <td>{{ .Payload.ArchivalNode }}</td>
-            <td>{{ .Payload.P2PConnectivity.Connected }}</td>
             <td>{{ .Payload.P2PConnectivity.TotalKnown }}</td>
             <td>{{ calcConnectivity .Payload.P2PConnectivity.Connected .Payload.P2PConnectivity.TotalKnown }}</td>
             <td>{{ convertUnixTime .Payload.NodeStartTime }}</td>

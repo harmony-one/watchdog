@@ -335,7 +335,6 @@ func (m *monitor) produceCSV(w http.ResponseWriter, req *http.Request) {
 						v.(NodeMetadata).IP,
 						blsKeys,
 						shortV,
-						v.(NodeMetadata).Payload.NetworkType,
 						strconv.FormatUint(uint64(v.(NodeMetadata).Payload.ChainConfig.ChainID), 10),
 						strconv.FormatBool(v.(NodeMetadata).Payload.IsLeader),
 						strconv.FormatUint(uint64(v.(NodeMetadata).Payload.ShardID), 10),
