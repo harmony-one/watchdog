@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/yanzay/tbot/v2"
 )
 
 // Only need to query leader on Shard 0
-func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdServiceKey, chain string, shardMap map[string]int) {
+func (m *monitor) crossLinkMonitor(params watchParams, shardMap map[string]int, tgclient tbot.Client) {
+	interval := uint64(params.InspectSchedule.CrossLink)
+	warning := uint64(params.ShardHealthReporting.CrossLink.Warning)
+	poolSize := int(params.Performance.WorkerPoolSize)
+	chain := string(params.Network.TargetChain)
 	crossLinkRequestFields := getRPCRequest(LastCrossLinkRPC)
 	nodeRequestFields := getRPCRequest(NodeMetadataRPC)
 
@@ -90,11 +96,17 @@ func (m *monitor) crossLinkMonitor(interval, warning uint64, poolSize int, pdSer
 									result.EpochNumber, result.Signature, result.SignatureBitmap,
 									elapsedTime.Seconds(), elapsedTime.Minutes())
 								incidentKey := fmt.Sprintf("Chain: %s, Shard %d, CrossLinkMonitor", chain, result.ShardID)
-								err := notify(pdServiceKey, incidentKey, chain, message)
+								errtg := notifytg(tgclient, params.Auth.Telegram.ChatID, incidentKey+"\n"+message)
+								err := notify(params.Auth.PagerDuty.EventServiceKey, incidentKey, chain, message)
 								if err != nil {
 									errlog.Print(err)
 								} else {
 									stdlog.Printf("[crossLinkMonitor] Sent PagerDuty alert! %s", incidentKey)
+								}
+								if errtg != nil {
+									errlog.Print(errtg)
+								} else {
+									stdlog.Printf("[crossLinkMonitor] Sent TG alert! %s", incidentKey)
 								}
 							}
 							continue

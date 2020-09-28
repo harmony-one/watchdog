@@ -100,6 +100,10 @@ type watchParams struct {
 		PagerDuty struct {
 			EventServiceKey string `yaml:"event-service-key"`
 		} `yaml:"pagerduty"`
+		Telegram struct {
+			BotToken string `yaml:"bot-token"`
+			ChatID   string `yaml:"chat-id"`
+		} `yaml:"telegram"`
 	} `yaml:"auth"`
 	Network struct {
 		TargetChain string `yaml:"target-chain"`
@@ -133,7 +137,7 @@ type watchParams struct {
 		ShardHeight struct {
 			Warning int `yaml:"tolerance"`
 		} `yaml:"shard-height"`
-		Connectivity  struct {
+		Connectivity struct {
 			Warning int `yaml:"tolerance"`
 		} `yaml:"connectivity"`
 	} `yaml:"shard-health-reporting"`

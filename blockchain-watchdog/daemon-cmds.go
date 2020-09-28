@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	installD           = "install the harmony-watchdogd service"
-	removeD            = "remove the harmony-watchdogd service"
-	startD             = "start the harmony-watchdogd service"
-	stopD              = "stop the harmony-watchdogd service"
-	statusD            = "check status of the harmony-watchdogd service"
-	mCmd               = "monitor"
-	mFlag              = "yaml-config"
-	mDescr             = "yaml detailing what to watch [required]"
+	installD = "install the harmony-watchdogd service"
+	removeD  = "remove the harmony-watchdogd service"
+	startD   = "start the harmony-watchdogd service"
+	stopD    = "stop the harmony-watchdogd service"
+	statusD  = "check status of the harmony-watchdogd service"
+	mCmd     = "monitor"
+	mFlag    = "yaml-config"
+	mDescr   = "yaml detailing what to watch [required]"
 )
 
 func (cw *cobraSrvWrapper) install(cmd *cobra.Command, args []string) error {
@@ -110,6 +110,8 @@ func generateSampleYAML() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sampleParams := watchParams{}
 			sampleParams.Auth.PagerDuty.EventServiceKey = "YOUR_PAGERDUTY_KEY"
+			sampleParams.Auth.Telegram.BotToken = "YOUR_TELEGRAM_KEY"
+			sampleParams.Auth.Telegram.ChatID = "YOUR_CHATID"
 			sampleParams.Network.TargetChain = "mainnet"
 			sampleParams.Network.RPCPort = 9500
 			sampleParams.InspectSchedule.BlockHeader = 15

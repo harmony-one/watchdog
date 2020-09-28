@@ -6,20 +6,24 @@ import (
 	"sort"
 	"sync/atomic"
 	"time"
+
+	"github.com/yanzay/tbot/v2"
 )
 
 func (m *monitor) beaconSyncMonitor(
-	beaconBlock, interval, threshold uint64, poolSize int,
-	pdServiceKey, chain string, shardMap map[string]int,
+	beaconBlock uint64, params watchParams,
+	shardMap map[string]int, client tbot.Client,
 ) {
 	stdlog.Printf("[beaconSyncMonitor] Starting beacon sync check, Beacon Block: %v", beaconBlock)
+	threshold := uint64(params.ShardHealthReporting.Consensus.Warning)
+	poolSize := int(params.Performance.WorkerPoolSize)
 	currentBeaconHeaders := getBeaconHeaders(poolSize, shardMap)
 
 	shardBeaconMap := map[int]map[uint64]bool{}
 	for ip, header := range currentBeaconHeaders {
 		if header != nil {
 			if beaconBlock > header.Number && beaconBlock-header.Number >= threshold {
-				go checkBeaconSync(header.Number, beaconBlock, threshold, interval, ip, pdServiceKey, chain)
+				go checkBeaconSync(header.Number, beaconBlock, ip, params, client)
 			}
 			if _, exists := shardBeaconMap[shardMap[ip]]; !exists {
 				shardBeaconMap[shardMap[ip]] = map[uint64]bool{}
@@ -105,7 +109,11 @@ func getBeaconHeaders(poolSize int,
 	return ret
 }
 
-func checkBeaconSync(blockNum, beaconHeight, threshold, syncTimer uint64, IP, pdServiceKey, chain string) {
+func checkBeaconSync(blockNum, beaconHeight uint64, IP string, params watchParams, client tbot.Client) {
+	syncTimer := uint64(params.ShardHealthReporting.Consensus.Interval)
+	threshold := uint64(params.ShardHealthReporting.Consensus.Warning)
+	chain := string(params.Network.TargetChain)
+
 	type a struct {
 		Result NodeMetadataReply `json:"result"`
 	}
@@ -132,11 +140,17 @@ func checkBeaconSync(blockNum, beaconHeight, threshold, syncTimer uint64, IP, pd
 			beaconHeight, headers.Result.AuxShard.ShardID, chain,
 		)
 		incidentKey := fmt.Sprintf("%s beacon out of sync! - %s", IP, chain)
-		err := notify(pdServiceKey, incidentKey, chain, message)
+		errtg := notifytg(client, params.Auth.Telegram.ChatID, incidentKey+"\n"+message)
+		err := notify(params.Auth.PagerDuty.EventServiceKey, incidentKey, chain, message)
 		if err != nil {
 			errlog.Print(err)
 		} else {
-		 	stdlog.Printf("[checkBeaconSync] Sent PagerDuty alert! %s", incidentKey)
+			stdlog.Printf("[checkBeaconSync] Sent PagerDuty alert! %s", incidentKey)
+		}
+		if errtg != nil {
+			errlog.Print(errtg)
+		} else {
+			stdlog.Printf("[checkBeaconSync] Sent TG alert! %s", incidentKey)
 		}
 		stdlog.Printf("[checkBeaconSync] %s beacon not syncing", IP)
 	} else {

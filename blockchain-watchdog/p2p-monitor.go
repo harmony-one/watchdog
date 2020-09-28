@@ -2,11 +2,16 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/yanzay/tbot/v2"
 )
 
-func (m *monitor) p2pMonitor(tolerance int, pdServiceKey, chain string, data MetadataContainer) {
+func (m *monitor) p2pMonitor(params watchParams, data MetadataContainer, tgclient tbot.Client) {
 	stdlog.Print("[p2pMonitor] Running p2p connectivity check")
 	percent := map[int][]int{}
+	chain := string(params.Network.TargetChain)
+	tolerance := int(params.ShardHealthReporting.Connectivity.Warning)
+
 	for _, metadata := range data.Nodes {
 		shard := int(metadata.Payload.ShardID)
 		connection := 0
@@ -17,7 +22,7 @@ func (m *monitor) p2pMonitor(tolerance int, pdServiceKey, chain string, data Met
 		}
 		percent[shard] = append(percent[shard], connection)
 	}
-	for shard, values := range(percent) {
+	for shard, values := range percent {
 		avg := 0
 		if len(values) > 0 {
 			sum := 0
@@ -28,11 +33,17 @@ func (m *monitor) p2pMonitor(tolerance int, pdServiceKey, chain string, data Met
 			if avg != 0 && avg < tolerance {
 				message := fmt.Sprintf(p2pMessage, shard, avg)
 				incidentKey := fmt.Sprintf("Shard %d connectivity lower than threshold - %s", shard, chain)
-				err := notify(pdServiceKey, incidentKey, chain, message)
+				errtg := notifytg(tgclient, params.Auth.Telegram.ChatID, incidentKey+"\n"+message)
+				err := notify(params.Auth.PagerDuty.EventServiceKey, incidentKey, chain, message)
 				if err != nil {
 					errlog.Print(err)
 				} else {
-					stdlog.Printf("[p2pMonitor] Send PagerDuty alert! %s", incidentKey)
+					stdlog.Printf("[p2pMonitor] Send TG/PagerDuty alert! %s", incidentKey)
+				}
+				if errtg != nil {
+					errlog.Print(errtg)
+				} else {
+					stdlog.Printf("[p2pMonitor] Sent TG alert! %s", incidentKey)
 				}
 			}
 		}

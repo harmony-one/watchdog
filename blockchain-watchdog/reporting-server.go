@@ -17,6 +17,7 @@ import (
 
 	"github.com/ahmetb/go-linq"
 	"github.com/valyala/fasthttp"
+	"github.com/yanzay/tbot/v2"
 )
 
 const (
@@ -482,10 +483,11 @@ func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
 }
 
 func (m *monitor) manager(
-	jobs chan work, interval, tolerance int, shardMap map[string]int,
-	rpc, pdServiceKey, chain string, group *sync.WaitGroup,
-	channels map[string](chan reply),
+	jobs chan work, shardMap map[string]int,
+	params watchParams, rpc string, group *sync.WaitGroup,
+	channels map[string](chan reply), tgclient tbot.Client,
 ) {
+	interval := int(params.InspectSchedule.NodeMetadata)
 	requestFields := getRPCRequest(rpc)
 
 	prevEpoch := uint64(0)
@@ -524,7 +526,7 @@ func (m *monitor) manager(
 			containerCopy := MetadataContainer{}
 			containerCopy.Nodes = append([]NodeMetadata{}, m.WorkingMetadata.Nodes...)
 
-			go m.p2pMonitor(tolerance, pdServiceKey, chain, containerCopy)
+			go m.p2pMonitor(params, containerCopy, tgclient)
 
 			m.inUse.Lock()
 			m.metadataCopy(m.WorkingMetadata)
@@ -564,6 +566,7 @@ func (m *monitor) manager(
 
 func (m *monitor) update(
 	params watchParams, superCommittee map[int]committee, rpcs []string,
+	tgclient tbot.Client,
 ) {
 	shardMap := map[string]int{}
 	for k, v := range superCommittee {
@@ -595,47 +598,19 @@ func (m *monitor) update(
 		switch rpc {
 		case NodeMetadataRPC:
 			go m.manager(
-				jobs, params.InspectSchedule.NodeMetadata,
-				params.ShardHealthReporting.Connectivity.Warning,
-				shardMap, rpc,
-				params.Auth.PagerDuty.EventServiceKey,
-				params.Network.TargetChain,
-				syncGroups[rpc], replyChannels,
+				jobs, shardMap, params, rpc, syncGroups[rpc],
+				replyChannels, tgclient,
 			)
 		case BlockHeaderRPC:
 			// TODO: Refactor manager
 			go m.manager(
-				jobs, params.InspectSchedule.BlockHeader, 0,
-				shardMap, rpc,
-				"", "",
-				syncGroups[rpc], replyChannels,
+				jobs, shardMap, params, rpc, syncGroups[rpc],
+				replyChannels, tgclient,
 			)
 			go m.stakingCommitteeUpdate(getBeaconChainNode(shardMap))
-			go m.consensusMonitor(
-				uint64(params.ShardHealthReporting.Consensus.Interval),
-				uint64(params.ShardHealthReporting.Consensus.Warning),
-				uint64(params.ShardHealthReporting.ShardHeight.Warning),
-				params.Performance.WorkerPoolSize,
-				params.Auth.PagerDuty.EventServiceKey,
-				params.Network.TargetChain,
-				shardMap,
-			)
-			go m.cxMonitor(
-				uint64(params.InspectSchedule.CxPending),
-				uint64(params.ShardHealthReporting.CxPending.Warning),
-				params.Performance.WorkerPoolSize,
-				params.Auth.PagerDuty.EventServiceKey,
-				params.Network.TargetChain,
-				shardMap,
-			)
-			go m.crossLinkMonitor(
-				uint64(params.InspectSchedule.CrossLink),
-				uint64(params.ShardHealthReporting.CrossLink.Warning),
-				params.Performance.WorkerPoolSize,
-				params.Auth.PagerDuty.EventServiceKey,
-				params.Network.TargetChain,
-				shardMap,
-			)
+			go m.consensusMonitor(params, shardMap, tgclient)
+			go m.cxMonitor(params, shardMap, tgclient)
+			go m.crossLinkMonitor(params, shardMap, tgclient)
 		}
 	}
 }
@@ -791,7 +766,9 @@ func (m *monitor) startReportingHTTPServer(instrs *instruction) {
 		MaxConnsPerHost: 2048,
 		ReadTimeout:     time.Second * time.Duration(1),
 	}
-	go m.update(instrs.watchParams, instrs.superCommittee, []string{BlockHeaderRPC, NodeMetadataRPC})
+	bot := tbot.New(instrs.watchParams.Auth.Telegram.BotToken)
+	tgclient := bot.Client()
+	go m.update(instrs.watchParams, instrs.superCommittee, []string{BlockHeaderRPC, NodeMetadataRPC}, *tgclient)
 	http.HandleFunc("/report-"+instrs.Network.TargetChain, m.renderReport)
 	http.HandleFunc("/report-download-"+instrs.Network.TargetChain, m.produceCSV)
 	http.HandleFunc("/network-"+instrs.Network.TargetChain, m.networkSnapshotJSON)
