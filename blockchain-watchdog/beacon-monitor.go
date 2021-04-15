@@ -24,18 +24,18 @@ func (m *monitor) beaconSyncMonitor(
 	shardBeaconMap := map[int]map[uint64]bool{}
 	for ip, header := range currentBeaconHeaders {
 		if header != nil {
-			BlockNumberInt, err := strconv.ParseUint(strings.Replace(header.Number, "0x", "", -1), 16, 64)
+			blockNumberInt, err := strconv.ParseUint(strings.Replace(header.Number, "0x", "", -1), 16, 64)
 			if err != nil {
 				errlog.Printf("Block Hex (%s) Conversion failed: %s\n", header.Number, err)
 			}
-			if beaconBlock > BlockNumberInt && beaconBlock-BlockNumberInt >= threshold {
-				go checkBeaconSync(BlockNumberInt, beaconBlock, ip, params, client)
+			if beaconBlock > blockNumberInt && beaconBlock-blockNumberInt >= threshold {
+				go checkBeaconSync(blockNumberInt, beaconBlock, ip, params, client)
 			}
 			if _, exists := shardBeaconMap[shardMap[ip]]; !exists {
 				shardBeaconMap[shardMap[ip]] = map[uint64]bool{}
 			}
-			if _, exists := shardBeaconMap[shardMap[ip]][BlockNumberInt]; !exists {
-				shardBeaconMap[shardMap[ip]][BlockNumberInt] = true
+			if _, exists := shardBeaconMap[shardMap[ip]][blockNumberInt]; !exists {
+				shardBeaconMap[shardMap[ip]][blockNumberInt] = true
 			}
 		}
 	}
@@ -141,12 +141,12 @@ func checkBeaconSync(blockNum, beaconHeight uint64, IP string, params watchParam
 	}
 	headers := h{}
 	json.Unmarshal(result, &headers)
-	BlockNumberInt, err := strconv.ParseUint(strings.Replace(headers.Result.Beacon.Number, "0x", "", -1), 16, 64)
+	blockNumberInt, err := strconv.ParseUint(strings.Replace(headers.Result.Beacon.Number, "0x", "", -1), 16, 64)
 	if err != nil {
 		errlog.Printf("Block Hex (%s) Conversion failed: %s\n", headers.Result.Beacon.Number, err)
 	}
-	if !(BlockNumberInt > blockNum) && (beaconHeight-BlockNumberInt > threshold) {
-		message := fmt.Sprintf(beaconSyncMessage, IP, BlockNumberInt,
+	if !(blockNumberInt > blockNum) && (beaconHeight-blockNumberInt > threshold) {
+		message := fmt.Sprintf(beaconSyncMessage, IP, blockNumberInt,
 			beaconHeight, headers.Result.AuxShard.ShardID, chain,
 		)
 		incidentKey := fmt.Sprintf("%s beacon out of sync! - %s", IP, chain)
