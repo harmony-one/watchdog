@@ -119,11 +119,11 @@ type HeaderPair struct {
 }
 
 type Header struct {
-	Hash    string `json:"block-header-hash"`
-	Number  uint64 `json:"block-number"`
+	Hash    string `json:"hash"`
+	Number  string `json:"number"`
 	Epoch   uint64 `json:"epoch"`
-	ShardID uint32 `json:"shard-id"`
-	ViewID  uint64 `json:"view-id"`
+	ShardID uint32 `json:"shardID"`
+	ViewID  uint64 `json:"viewID"`
 }
 
 func getRPCRequest(rpc string) map[string]interface{} {
