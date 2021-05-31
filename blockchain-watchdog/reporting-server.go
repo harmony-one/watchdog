@@ -43,15 +43,18 @@ func identity(x interface{}) interface{} {
 }
 
 const (
-	metaSumry            = "node-metadata"
-	headerSumry          = "block-header"
-	chainSumry           = "chain-config"
-	committeeSumry       = "staking-committee"
-	blockMax             = "block-max"
-	timestamp            = "timestamp"
-	twoSecondsFirstBlock = 6324224 // (366 - 1) * 2^14 + (21 * 2^14)
-	blocksPerEpochV2     = 32768   // 2^15
-	twoSecondsEpoch      = 366
+	metaSumry                   = "node-metadata"
+	headerSumry                 = "block-header"
+	chainSumry                  = "chain-config"
+	committeeSumry              = "staking-committee"
+	blockMax                    = "block-max"
+	timestamp                   = "timestamp"
+	mainnetTwoSecondsFirstBlock = 6324224 // (366 - 1) * 2^14 + (21 * 2^14)
+	testnetTwoSecondsFirstBlock = 2774000 // 73000 * 38
+	mainnetBlocksPerEpochV2     = 32768   // 2^15
+	testnetBlocksPerEpochV2     = 8192
+	mainnetTwoSecondsEpoch      = 366
+	testnetTwoSecondsEpoch      = 73000
 )
 
 func init() {
@@ -151,7 +154,21 @@ func summaryMaps(metas []NodeMetadata, headers []BlockHeader) summary {
 		})
 
 		// calculate next epoch first block
-		currentEpochLastBlock := twoSecondsFirstBlock - 1 + blocksPerEpochV2*(sample.(NodeMetadata).Payload.CurrentEpoch-twoSecondsEpoch+1)
+		var (
+			currentEpochLastBlock int
+			blocksPerEpoch        int
+		)
+		switch sample.(NodeMetadata).Payload.ChainConfig.ChainID {
+		case 1:
+			currentEpochLastBlock = mainnetTwoSecondsFirstBlock - 1 + mainnetBlocksPerEpochV2*(sample.(NodeMetadata).Payload.CurrentEpoch-mainnetTwoSecondsEpoch+1)
+			blocksPerEpoch = mainnetBlocksPerEpochV2
+		case 2:
+			currentEpochLastBlock = testnetTwoSecondsFirstBlock - 1 + testnetBlocksPerEpochV2*(sample.(NodeMetadata).Payload.CurrentEpoch-testnetTwoSecondsEpoch+1)
+			blocksPerEpoch = testnetBlocksPerEpochV2
+		default:
+			currentEpochLastBlock = 0
+			blocksPerEpoch = 0
+		}
 
 		sum[chainSumry][strconv.Itoa(int(shardID))] = any{
 			"chain-id":               sample.(NodeMetadata).Payload.ChainConfig.ChainID,
@@ -161,7 +178,7 @@ func summaryMaps(metas []NodeMetadata, headers []BlockHeader) summary {
 			"s3-epoch":               sample.(NodeMetadata).Payload.ChainConfig.S3Epoch,
 			"pre-staking-epoch":      sample.(NodeMetadata).Payload.ChainConfig.PreStakingEpoch,
 			"staking-epoch":          sample.(NodeMetadata).Payload.ChainConfig.StakingEpoch,
-			"blocks-per-epoch":       blocksPerEpochV2,
+			"blocks-per-epoch":       blocksPerEpoch,
 			"next-epoch-first-block": currentEpochLastBlock + 1,
 			"dns-zone":               sample.(NodeMetadata).Payload.DNSZone,
 		}
