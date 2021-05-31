@@ -43,12 +43,15 @@ func identity(x interface{}) interface{} {
 }
 
 const (
-	metaSumry      = "node-metadata"
-	headerSumry    = "block-header"
-	chainSumry     = "chain-config"
-	committeeSumry = "staking-committee"
-	blockMax       = "block-max"
-	timestamp      = "timestamp"
+	metaSumry            = "node-metadata"
+	headerSumry          = "block-header"
+	chainSumry           = "chain-config"
+	committeeSumry       = "staking-committee"
+	blockMax             = "block-max"
+	timestamp            = "timestamp"
+	twoSecondsFirstBlock = 6324224 // (366 - 1) * 2^14 + (21 * 2^14)
+	blocksPerEpochV2     = 32768   // 2^15
+	twoSecondsEpoch      = 366
 )
 
 func init() {
@@ -146,16 +149,21 @@ func summaryMaps(metas []NodeMetadata, headers []BlockHeader) summary {
 		sample := linq.From(value.(linq.Group).Group).FirstWith(func(c interface{}) bool {
 			return c.(NodeMetadata).Payload.ShardID == shardID
 		})
+
+		// calculate next epoch first block
+		currentEpochLastBlock := twoSecondsFirstBlock - 1 + blocksPerEpochV2*(sample.(NodeMetadata).Payload.CurrentEpoch-twoSecondsEpoch+1)
+
 		sum[chainSumry][strconv.Itoa(int(shardID))] = any{
-			"chain-id":          sample.(NodeMetadata).Payload.ChainConfig.ChainID,
-			"cross-link-epoch":  sample.(NodeMetadata).Payload.ChainConfig.CrossLinkEpoch,
-			"cross-tx-epoch":    sample.(NodeMetadata).Payload.ChainConfig.CrossTxEpoch,
-			"eip155-epoch":      sample.(NodeMetadata).Payload.ChainConfig.Eip155Epoch,
-			"s3-epoch":          sample.(NodeMetadata).Payload.ChainConfig.S3Epoch,
-			"pre-staking-epoch": sample.(NodeMetadata).Payload.ChainConfig.PreStakingEpoch,
-			"staking-epoch":     sample.(NodeMetadata).Payload.ChainConfig.StakingEpoch,
-			"blocks-per-epoch":  sample.(NodeMetadata).Payload.BlocksPerEpoch,
-			"dns-zone":          sample.(NodeMetadata).Payload.DNSZone,
+			"chain-id":               sample.(NodeMetadata).Payload.ChainConfig.ChainID,
+			"cross-link-epoch":       sample.(NodeMetadata).Payload.ChainConfig.CrossLinkEpoch,
+			"cross-tx-epoch":         sample.(NodeMetadata).Payload.ChainConfig.CrossTxEpoch,
+			"eip155-epoch":           sample.(NodeMetadata).Payload.ChainConfig.Eip155Epoch,
+			"s3-epoch":               sample.(NodeMetadata).Payload.ChainConfig.S3Epoch,
+			"pre-staking-epoch":      sample.(NodeMetadata).Payload.ChainConfig.PreStakingEpoch,
+			"staking-epoch":          sample.(NodeMetadata).Payload.ChainConfig.StakingEpoch,
+			"blocks-per-epoch":       blocksPerEpochV2,
+			"next-epoch-first-block": currentEpochLastBlock + 1,
+			"dns-zone":               sample.(NodeMetadata).Payload.DNSZone,
 		}
 	})
 

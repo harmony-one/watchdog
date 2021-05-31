@@ -92,6 +92,9 @@ hr:after {
   justify-content: space-between;
   width: 100%%;
 }
+.stat-box p span:first-child{
+  margin-right: 10px;
+}
 {{ with (index .Summary "block-header") }}
 {{ range $key, $value := .}}
 #curr-hn-toggle-{{$key}}:checked ~ * .curr-harmony-node-{{$key}}-true {
@@ -142,6 +145,7 @@ hr:after {
             <p><span>Pre-Staking Epoch:</span><span>{{index $value "pre-staking-epoch"}}</span></p>
             <p><span>Staking Epoch:</span><span>{{index $value "staking-epoch"}}</span></p>
             <p><span>Blocks Per Epoch:</span><span>{{index $value "blocks-per-epoch"}}</span></p>
+            <p><span>Next Epoch First Block:</span><span>{{index $value "next-epoch-first-block"}}</span></p>
             <p><span>DNS Zone:</span><span>{{index $value "dns-zone"}}</span></p>
             <p><span>Last Crosslink:</span><span>{{index (index (index $root.Summary "block-header") $key) "last-crosslink"}}</span></p>
             {{ if $root.SuperCommittee.CurrentCommittee.Deciders }}

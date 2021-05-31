@@ -23,6 +23,7 @@ type NodeMetadataReply struct {
 	ArchivalNode   bool     `json:"is-archival,omitempty"`
 	NodeStartTime  int64    `json:"node-unix-start-time"`
 	PeerID         string   `json:"peerid"`
+	CurrentEpoch   int      `json:"current-epoch"`
 	ChainConfig    struct {
 		ChainID         int `json:"chain-id"`
 		CrossLinkEpoch  int `json:"cross-link-epoch"`
