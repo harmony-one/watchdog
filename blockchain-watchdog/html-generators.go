@@ -145,7 +145,7 @@ hr:after {
             <p><span>Pre-Staking Epoch:</span><span>{{index $value "pre-staking-epoch"}}</span></p>
             <p><span>Staking Epoch:</span><span>{{index $value "staking-epoch"}}</span></p>
             <p><span>Blocks Per Epoch:</span><span>{{index $value "blocks-per-epoch"}}</span></p>
-            <p><span>Next Epoch First Block:</span><span>{{index $value "next-epoch-first-block"}}</span></p>
+            <p><span>Blocks To Next Epoch:</span><span id="blocks-to-next-{{$key}}">{{index $value "next-epoch-first-block"}}</span></p>
             <p><span>DNS Zone:</span><span>{{index $value "dns-zone"}}</span></p>
             <p><span>Last Crosslink:</span><span>{{index (index (index $root.Summary "block-header") $key) "last-crosslink"}}</span></p>
             {{ if $root.SuperCommittee.CurrentCommittee.Deciders }}
@@ -166,7 +166,7 @@ hr:after {
           <div class="flex-col center stat-box">
             <a href="#shard-{{$key}}">Shard-{{$key}}</a>
             <p><span>Node Count:</span><span>{{ len (index $value "records") }}</span></p>
-            <p><span>Max Block:</span><span>{{index $value "block-max"}}</span></p>
+            <p><span>Max Block:</span><span id="blocks-max-{{$key}}">{{index $value "block-max"}}</span></p>
             <p><span>Max Epoch:</span><span>{{index $value "epoch-max"}}</span></p>
             <p><span>Leader:</span><span>{{index $value "shard-leader"}}</span></p>
           </div>
@@ -478,7 +478,18 @@ hr:after {
 
     </main>
 <script>
-setInterval(() => window.location.reload(true),  1000 * 120);
+	setInterval(() => window.location.reload(true),  1000 * 120);
+	
+	// calculate blocks to next epoch for each shards
+	for	(var i = 0; i < 4; i++) {
+		if (i == 0) {
+			var nextEpochFirstBlock = document.getElementById("blocks-to-next-"+i).innerHTML;
+			var maxBlock = document.getElementById("blocks-max-"+i).innerHTML;
+			document.getElementById("blocks-to-next-"+i).innerHTML = nextEpochFirstBlock - maxBlock;
+		} else {
+			document.getElementById("blocks-to-next-"+i).innerHTML = '-';
+		}
+	}
 </script>
   </body>
 </html>
