@@ -719,12 +719,13 @@ type statusReport struct {
 }
 
 type shardStatus struct {
-	ShardID        string `json:"shard-id"`
-	Consensus      bool   `json:"consensus-status"`
-	Block          uint64 `json:"current-block-number"`
-	BlockTimestamp string `json:"block-timestamp"`
-	Epoch          uint64 `json:"current-epoch"`
-	LeaderAddress  string `json:"leader-address"`
+	ShardID             string `json:"shard-id"`
+	Consensus           bool   `json:"consensus-status"`
+	Block               uint64 `json:"current-block-number"`
+	BlockTimestamp      string `json:"block-timestamp"`
+	Epoch               uint64 `json:"current-epoch"`
+	NextEpochFirstBlock uint64 `json:"next-epoch-first-block"`
+	LeaderAddress       string `json:"leader-address"`
 }
 
 func (m *monitor) statusSnapshot() statusReport {
@@ -740,12 +741,26 @@ func (m *monitor) statusSnapshot() statusReport {
 
 	for i, shard := range sum[headerSumry] {
 		sample := shard.(any)["latest-block"].(BlockHeader)
+
+		var (
+			currentEpochLastBlock uint64
+		)
+		switch m.chain {
+		case "mainnet":
+			currentEpochLastBlock = mainnetTwoSecondsFirstBlock - 1 + mainnetBlocksPerEpochV2*(shard.(any)["epoch-max"].(uint64)-mainnetTwoSecondsEpoch+1)
+		case "testnet":
+			currentEpochLastBlock = testnetTwoSecondsFirstBlock - 1 + testnetBlocksPerEpochV2*(shard.(any)["epoch-max"].(uint64)-testnetTwoSecondsEpoch+1)
+		default:
+			currentEpochLastBlock = 0
+		}
+
 		status = append(status, shardStatus{
 			i,
 			cnsProgressCpy[i],
 			shard.(any)[blockMax].(uint64),
 			sample.Payload.Timestamp,
 			shard.(any)["epoch-max"].(uint64),
+			currentEpochLastBlock,
 			sample.Payload.Leader,
 		})
 	}
