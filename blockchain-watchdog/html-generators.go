@@ -264,6 +264,7 @@ hr:after {
 	    <th>Block Hash</th>
 	    <th>Epoch</th>
 	    <th>Block<br>Number</th>
+	    <th>Beacon Chain<br>Block Number</th>
 	    <th>Leader</th>
 	    <th>ViewID</th>
 	    <th>Timestamp</th>
@@ -279,6 +280,7 @@ hr:after {
             <td>{{ .Payload.BlockHash }}</td>
             <td>{{ .Payload.Epoch }}</td>
             <td>{{ .Payload.BlockNumber }}</td>
+            <td>{{ .Payload.BeaconChainBlock }}</td>
             <td>{{ .Payload.Leader }}</td>
             <td>{{ .Payload.ViewID }}</td>
             <td>{{ convertUnixTime .Payload.UnixTime }}</td>

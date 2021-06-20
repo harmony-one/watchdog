@@ -2,13 +2,14 @@ package main
 
 // RPC definitions
 const (
-	NodeMetadataRPC   = "hmy_getNodeMetadata"
-	BlockHeaderRPC    = "hmy_latestHeader"
-	PendingCXRPC      = "hmy_getPendingCXReceipts"
-	SuperCommitteeRPC = "hmy_getSuperCommittees"
-	LastCrossLinkRPC  = "hmy_getLastCrossLinks"
-	LatestHeadersRPC  = "hmy_getLatestChainHeaders"
-	JSONVersion       = "2.0"
+	NodeMetadataRPC       = "hmy_getNodeMetadata"
+	BlockHeaderRPC        = "hmy_latestHeader"
+	PendingCXRPC          = "hmy_getPendingCXReceipts"
+	SuperCommitteeRPC     = "hmy_getSuperCommittees"
+	LastCrossLinkRPC      = "hmy_getLastCrossLinks"
+	LatestHeadersRPC      = "hmy_getLatestChainHeaders"
+	LatestChainHeadersRPC = "hmyv2_getLatestChainHeaders"
+	JSONVersion           = "2.0"
 )
 
 type NodeMetadataReply struct {
@@ -64,11 +65,18 @@ type BlockHeaderReply struct {
 	UnixTime         int64  `json:"unixtime"`
 	LastCommitSig    string `json:"lastCommitSig"`
 	LastCommitBitmap string `json:"lastCommitBitmap"`
+	BeaconChainBlock uint64
 }
 
 type BlockHeader struct {
 	Payload BlockHeaderReply
 	IP      string
+}
+
+type LatestChainHeadersReply struct {
+	BeaconChainHeader struct {
+		Number string `json:"number"`
+	} `json:"beacon-chain-header"`
 }
 
 type SuperCommitteeReply struct {

@@ -509,11 +509,13 @@ func (m *monitor) stakingCommitteeUpdate(beaconChainNode string) {
 
 func (m *monitor) manager(
 	jobs chan work, shardMap map[string]int,
-	params watchParams, rpc string, group *sync.WaitGroup,
+	params watchParams, rpc string, groups map[string]*sync.WaitGroup,
 	channels map[string](chan reply), tgclient tbot.Client,
 ) {
 	interval := int(params.InspectSchedule.NodeMetadata)
 	requestFields := getRPCRequest(rpc)
+	group := groups[rpc]
+	bcBlock := make(map[string]uint64, len(shardMap))
 
 	prevEpoch := uint64(0)
 	for now := range time.Tick(time.Duration(interval) * time.Second) {
@@ -531,6 +533,31 @@ func (m *monitor) manager(
 		group.Wait()
 		close(channels[rpc])
 
+		// get beacon chain block for BlockHeaderRPC special
+		if rpc == BlockHeaderRPC {
+			waitGroup := groups[LatestChainHeadersRPC]
+
+			for n := range shardMap {
+				requestBody, _ := json.Marshal(getRPCRequest(LatestChainHeadersRPC))
+				jobs <- work{n, rpc, requestBody}
+				waitGroup.Add(1)
+			}
+			waitGroup.Wait()
+			close(channels[LatestChainHeadersRPC])
+
+			type bcReply struct {
+				Result LatestChainHeadersReply `json:"result"`
+			}
+
+			for d := range channels[LatestChainHeadersRPC] {
+				bcReport := bcReply{}
+				json.Unmarshal(d.rpcResult, &bcReport)
+				numberRaw := bcReport.Result.BeaconChainHeader.Number
+				number, _ := strconv.ParseUint(numberRaw[2:], 16, 64)
+				bcBlock[d.address] = number
+			}
+		}
+
 		first := true
 		switch rpc {
 		case NodeMetadataRPC:
@@ -544,7 +571,7 @@ func (m *monitor) manager(
 					m.WorkingMetadata.Down = append(m.WorkingMetadata.Down,
 						noReply{d.address, d.oops.Error(), string(d.rpcPayload), shardMap[d.address]})
 				} else {
-					m.bytesToNodeMetadata(d.rpc, d.address, d.rpcResult)
+					m.bytesToNodeMetadata(d.rpc, d.address, d.rpcResult, 0)
 				}
 			}
 
@@ -567,7 +594,11 @@ func (m *monitor) manager(
 					m.WorkingBlockHeader.Down = append(m.WorkingBlockHeader.Down,
 						noReply{d.address, d.oops.Error(), string(d.rpcPayload), shardMap[d.address]})
 				} else {
-					m.bytesToNodeMetadata(d.rpc, d.address, d.rpcResult)
+					var nodeBcBlock uint64
+					if block, ok := bcBlock[d.address]; ok {
+						nodeBcBlock = block
+					}
+					m.bytesToNodeMetadata(d.rpc, d.address, d.rpcResult, nodeBcBlock)
 				}
 			}
 			m.inUse.Lock()
@@ -610,8 +641,13 @@ func (m *monitor) update(
 			var mGroup sync.WaitGroup
 			syncGroups[rpc] = &mGroup
 		case BlockHeaderRPC:
-			var bhGroup sync.WaitGroup
+			var (
+				bhGroup sync.WaitGroup
+				chGroup sync.WaitGroup
+			)
 			syncGroups[rpc] = &bhGroup
+			syncGroups[LatestChainHeadersRPC] = &chGroup
+			replyChannels[LatestChainHeadersRPC] = make(chan reply, len(shardMap))
 		}
 	}
 
@@ -623,13 +659,13 @@ func (m *monitor) update(
 		switch rpc {
 		case NodeMetadataRPC:
 			go m.manager(
-				jobs, shardMap, params, rpc, syncGroups[rpc],
+				jobs, shardMap, params, rpc, syncGroups,
 				replyChannels, tgclient,
 			)
 		case BlockHeaderRPC:
 			// TODO: Refactor manager
 			go m.manager(
-				jobs, shardMap, params, rpc, syncGroups[rpc],
+				jobs, shardMap, params, rpc, syncGroups,
 				replyChannels, tgclient,
 			)
 			go m.stakingCommitteeUpdate(getBeaconChainNode(shardMap))
@@ -640,7 +676,7 @@ func (m *monitor) update(
 	}
 }
 
-func (m *monitor) bytesToNodeMetadata(rpc, addr string, payload []byte) {
+func (m *monitor) bytesToNodeMetadata(rpc, addr string, payload []byte, bcNum uint64) {
 	type r struct {
 		Result NodeMetadataReply `json:"result"`
 	}
@@ -658,6 +694,7 @@ func (m *monitor) bytesToNodeMetadata(rpc, addr string, payload []byte) {
 	case BlockHeaderRPC:
 		oneReport := s{}
 		json.Unmarshal(payload, &oneReport)
+		oneReport.Result.BeaconChainBlock = bcNum
 		m.WorkingBlockHeader.Nodes = append(m.WorkingBlockHeader.Nodes, BlockHeader{
 			oneReport.Result,
 			addr,
@@ -806,9 +843,12 @@ func (m *monitor) startReportingHTTPServer(instrs *instruction) {
 		MaxConnsPerHost: 2048,
 		ReadTimeout:     time.Second * time.Duration(1),
 	}
+
 	bot := tbot.New(instrs.watchParams.Auth.Telegram.BotToken)
 	tgclient := bot.Client()
+
 	go m.update(instrs.watchParams, instrs.superCommittee, []string{BlockHeaderRPC, NodeMetadataRPC}, *tgclient)
+
 	http.HandleFunc("/report-"+instrs.Network.TargetChain, m.renderReport)
 	http.HandleFunc("/report-download-"+instrs.Network.TargetChain, m.produceCSV)
 	http.HandleFunc("/network-"+instrs.Network.TargetChain, m.networkSnapshotJSON)
