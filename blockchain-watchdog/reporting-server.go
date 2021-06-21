@@ -532,14 +532,15 @@ func (m *monitor) manager(
 		}
 		group.Wait()
 		close(channels[rpc])
-
+		
 		// get beacon chain block for BlockHeaderRPC special
 		if rpc == BlockHeaderRPC {
 			waitGroup := groups[LatestChainHeadersRPC]
+			channels[LatestChainHeadersRPC] = make(chan reply, len(shardMap))
 
 			for n := range shardMap {
 				requestBody, _ := json.Marshal(getRPCRequest(LatestChainHeadersRPC))
-				jobs <- work{n, rpc, requestBody}
+				jobs <- work{n, LatestChainHeadersRPC, requestBody}
 				waitGroup.Add(1)
 			}
 			waitGroup.Wait()
@@ -550,10 +551,16 @@ func (m *monitor) manager(
 			}
 
 			for d := range channels[LatestChainHeadersRPC] {
+				var number uint64
 				bcReport := bcReply{}
+
 				json.Unmarshal(d.rpcResult, &bcReport)
 				numberRaw := bcReport.Result.BeaconChainHeader.Number
-				number, _ := strconv.ParseUint(numberRaw[2:], 16, 64)
+
+				if len(numberRaw) > 2 {
+					number, _ = strconv.ParseUint(numberRaw[2:], 16, 64)
+				}
+
 				bcBlock[d.address] = number
 			}
 		}
@@ -647,7 +654,6 @@ func (m *monitor) update(
 			)
 			syncGroups[rpc] = &bhGroup
 			syncGroups[LatestChainHeadersRPC] = &chGroup
-			replyChannels[LatestChainHeadersRPC] = make(chan reply, len(shardMap))
 		}
 	}
 
